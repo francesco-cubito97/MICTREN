@@ -37,8 +37,8 @@ class MICTREN(nn.Module):
         self.n_params = self.n_cam_params + self.n_pose_params + self.n_shape_params
         
         self.parameters_fc1 = nn.Linear(3, 1)
-        self.parameters_fc2 = nn.Linear(cfg.JOIN_NUM + cfg.VERT_SUB_NUM, 99)
-        self.parameters_fc3 = nn.Linear(99, self.n_params)
+        self.parameters_fc2 = nn.Linear(cfg.JOIN_NUM + cfg.VERT_SUB_NUM, 100)
+        self.parameters_fc3 = nn.Linear(100, self.n_params)
         
 
     def forward(self, images, mano_model, mesh_sampler, meta_masks=None, is_train=False):
