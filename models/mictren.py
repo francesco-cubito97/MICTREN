@@ -37,8 +37,9 @@ class MICTREN(nn.Module):
         self.n_params = self.n_cam_params + self.n_pose_params + self.n_shape_params
         
         self.parameters_fc1 = nn.Linear(3, 1)
-        self.parameters_fc2 = nn.Linear(cfg.JOIN_NUM + cfg.VERT_SUB_NUM, 100)
-        self.parameters_fc3 = nn.Linear(100, self.n_params)
+        self.parameters_fc2 = nn.Linear(cfg.JOIN_NUM + cfg.VERT_SUB_NUM, 150)
+        self.parameters_fc3 = nn.Linear(150, 100)
+        self.parameters_fc4 = nn.Linear(100, self.n_params)
         
 
     def forward(self, images, mano_model, mesh_sampler, meta_masks=None, is_train=False):
@@ -64,7 +65,7 @@ class MICTREN(nn.Module):
 
         # Concatenate templates and then duplicate to batch size
         # Reference parameters represents the output that I want transformers from transformers
-        ref_params = torch.cat([template_3d_joints, template_vertices_sub], dim=1) # shape [1, 195+21, 3]
+        ref_params = torch.cat([template_3d_joints, template_vertices_sub], dim=1) # shape [1, 21+195, 3]
         ref_params = ref_params.expand(batch_size, -1, -1) # shape [bs, 216, 3]
 
         # Extract local image features using a CNN backbone
@@ -94,11 +95,12 @@ class MICTREN(nn.Module):
         pred_params = self.parameters_fc1(predictions)
         pred_params = self.parameters_fc2(pred_params.transpose(1, 2))
         pred_params = self.parameters_fc3(pred_params)
+        pred_params = self.parameters_fc4(pred_params)
         pred_params = pred_params.transpose(1, 2).squeeze(-1)
 
         #print("Pred_params= ", pred_params.shape)
         
-        pred_cam_params = pred_params[: , :self.n_cam_params]
+        pred_cam_params = pred_params[:, :self.n_cam_params]
         pred_pose_params = pred_params[:, self.n_cam_params:self.n_cam_params + self.n_pose_params]
         pred_shape_params = pred_params[:, self.n_cam_params + self.n_pose_params:]
         
