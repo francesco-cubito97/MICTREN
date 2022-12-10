@@ -92,7 +92,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         gt_3d_joints_with_tag = torch.ones((batch_size, gt_3d_joints.shape[1], 4)).cuda()
         gt_3d_joints_with_tag[:, :, :3] = gt_3d_joints
 
-        # Prepare masks for 3d joints modeling
+        # Prepare masks for 3d joints/vertices modeling
         mjm_mask_ = mjm_mask.expand(-1, -1, 1491)
         mvm_mask_ = mvm_mask.expand(-1, -1, 1491)
         meta_masks = torch.cat([mjm_mask_, mvm_mask_], dim=1)
@@ -102,13 +102,15 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                                                                                                                meta_masks=meta_masks, is_train=True)
         
         # Regress 3d joints from the mesh
-        #pred_3d_joints_from_mesh = mano_model.get_3d_joints_from_mesh(pred_vertices)
+        pred_3d_joints_from_mesh = mano_model.get_3d_joints_from_mesh(pred_vertices)
 
         # Obtain 2d joints from 3d MANO ones
         pred_2d_joints = orthographic_projection(pred_3d_joints.contiguous(), pred_camera.contiguous())
+        pred_2d_joints_from_mesh = orthographic_projection(pred_3d_joints_from_mesh.contiguous(), pred_camera.contiguous())
 
-        # Compute 3d joint loss 
-        loss_3d_joints = joints_3d_loss(criterion_joints, pred_3d_joints, gt_3d_joints_with_tag, has_3d_joints)
+        # Compute 3d joints loss 
+        loss_3d_joints = joints_3d_loss(criterion_joints, pred_3d_joints, gt_3d_joints_with_tag, has_3d_joints) + \
+                         joints_3d_loss(criterion_joints, pred_3d_joints_from_mesh, gt_3d_joints_with_tag)
 
         # Compute 3d vertices loss
         loss_vertices = ( args.vloss_w_sub * vertices_loss(criterion_vertices, pred_vertices_sub, gt_vertices_sub, has_mesh) + \
@@ -119,7 +121,8 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         loss_betas = betas_loss(criterion_betas, pred_betas, gt_betas)
 
         # Compute 2d joints loss
-        loss_2d_joints = joints_2d_loss(criterion_2d_keypoints, pred_2d_joints, gt_2d_joints)
+        loss_2d_joints = joints_2d_loss(criterion_2d_keypoints, pred_2d_joints, gt_2d_joints) + \
+                         joints_2d_loss(criterion_2d_keypoints, pred_2d_joints_from_mesh, gt_2d_joints)
 
         loss = args.joints_loss_weight * loss_3d_joints + \
                 args.vertices_loss_weight * loss_vertices + \

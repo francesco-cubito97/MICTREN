@@ -53,7 +53,7 @@ class Mano(nn.Module):
 
          
 
-    def get_3d_joint_from_mesh(self, vertices):
+    def get_3d_joints_from_mesh(self, vertices):
         """
         This method is used to get the joint locations from the mesh
         Input:
