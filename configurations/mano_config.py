@@ -25,7 +25,7 @@ open source project Manopth (https://github.com/hassony2/manopth)
 VERT_NUM = 778
 VERT_SUB_NUM = 195
 
-# Finger tip indices right hand
+# Finger tips right hand
 FINGERTIPS_RIGHT = [745, 317, 444, 556, 673]
 
 # Joints
