@@ -4,9 +4,6 @@ Rendering tools for 3D mesh visualization on 2D image.
 Parts of the code are taken from https://github.com/akanazawa/hmr
 """
 
-# TODO: adjust skeleton rendering for hands. Maybe is possible use render
-# of freihand dataset, that is beautiful
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -20,56 +17,58 @@ from opendr.lighting import LambertianPointLight
 import torch
 from torchvision.utils import make_grid as makeGrid
 
-
 # Rotate the points by a specified angle.
-def rotateY(points, angle):
+def rotate_y(points, angle):
     ry = np.array([
         [np.cos(angle), 0., np.sin(angle)], [0., 1., 0.],
         [-np.sin(angle), 0., np.cos(angle)]
     ])
     return np.dot(points, ry)
 
-def drawSkeleton(input_image, joints, draw_edges=True, vis=None, radius=None):
+def draw_skeleton(input_image, joints, draw_edges=True, vis=None, radius=None):
     """
-    joints is 3 x 19. but if not will transpose it.
-    0: Right ankle
-    1: Right knee
-    2: Right hip
-    3: Left hip
-    4: Left knee
-    5: Left ankle
-    6: Right wrist
-    7: Right elbow
-    8: Right shoulder
-    9: Left shoulder
-    10: Left elbow
-    11: Left wrist
-    12: Neck
-    13: Head top
-    14: nose
-    15: left_eye
-    16: right_eye
-    17: left_ear
-    18: right_ear
+    The joints are 3 x 21
+
+    0: Palm
+    1: Thumb_1
+    2: Thumb_2
+    3: Thumb_3
+    4: Thumb_4
+    5: Index_1
+    6: Index_2
+    7: Index_3
+    8: Index_4
+    9: Middle_1
+    10: Middle_2
+    11: Middle_3
+    12: Middle_4
+    13: Ring_1
+    14: Ring_2
+    15: Ring_3
+    16: Ring_4
+    17: Pinky_1
+    18: Pinky_2
+    19: Pinky_3
+    20: Pinky_4
     """
 
     if radius is None:
         radius = max(4, (np.mean(input_image.shape[:2]) * 0.01).astype(int))
 
     colors = {
-        'pink': (197, 27, 125),  
-        'light_pink': (233, 163, 201), 
-        'light_green': (161, 215, 106),  
-        'green': (77, 146, 33),  
-        'red': (215, 48, 39),  
-        'light_red': (252, 146, 114),  
-        'light_orange': (252, 141, 89), 
-        'purple': (118, 42, 131),  
-        'light_purple': (175, 141, 195),  
-        'light_blue': (145, 191, 219), 
-        'blue': (69, 117, 180),  
-        'gray': (130, 130, 130), 
-        'white': (255, 255, 255),  
+        "pink": (197, 27, 125),  
+        "light_pink": (233, 163, 201), 
+        "light_green": (161, 215, 106),  
+        "green": (77, 146, 33),  
+        "red": (215, 48, 39),  
+        "light_red": (252, 146, 114),  
+        "light_orange": (252, 141, 89), 
+        "purple": (118, 42, 131),  
+        "light_purple": (175, 141, 195),  
+        "light_blue": (145, 191, 219), 
+        "blue": (69, 117, 180),  
+        "gray": (130, 130, 130), 
+        "white": (255, 255, 255),  
     }
 
     image = input_image.copy()
@@ -88,10 +87,10 @@ def drawSkeleton(input_image, joints, draw_edges=True, vis=None, radius=None):
     joints = np.round(joints).astype(int)
 
     jcolors = [
-        'light_pink', 'light_pink', 'light_pink', 'pink', 'pink', 'pink',
-        'light_blue', 'light_blue', 'light_blue', 'blue', 'blue', 'blue',
-        'purple', 'purple', 'red', 'green', 'green', 'white', 'white',
-        'purple', 'purple', 'red', 'green', 'green', 'white', 'white'
+        "light_pink", "light_pink", "light_pink", "pink", "pink", "pink",
+        "light_blue", "light_blue", "light_blue", "blue", "blue", "blue",
+        "purple", "purple", "red", "green", "green", "white", "white",
+        "purple", "purple", "red", "green", "green", "white", "white"
     ]
 
     parents = np.array([
@@ -117,28 +116,29 @@ def drawSkeleton(input_image, joints, draw_edges=True, vis=None, radius=None):
         18,
         19,
     ])
+
     ecolors = {
-        0: 'light_purple',
-        1: 'light_green',
-        2: 'light_green',
-        3: 'light_green',
-        4: 'light_green',
-        5: 'pink',
-        6: 'pink',
-        7: 'pink',
-        8: 'pink',
-        9: 'light_blue',
-        10: 'light_blue',
-        11: 'light_blue',
-        12: 'light_blue',
-        13: 'light_red',
-        14: 'light_red',
-        15: 'light_red',
-        16: 'light_red',
-        17: 'purple',
-        18: 'purple',
-        19: 'purple',
-        20: 'purple',
+        0: "light_purple",
+        1: "light_green",
+        2: "light_green",
+        3: "light_green",
+        4: "light_green",
+        5: "pink",
+        6: "pink",
+        7: "pink",
+        8: "pink",
+        9: "light_blue",
+        10: "light_blue",
+        11: "light_blue",
+        12: "light_blue",
+        13: "light_red",
+        14: "light_red",
+        15: "light_red",
+        16: "light_red",
+        17: "purple",
+        18: "purple",
+        19: "purple",
+        20: "purple",
     }
     
     for child in range(len(parents)):
@@ -147,15 +147,14 @@ def drawSkeleton(input_image, joints, draw_edges=True, vis=None, radius=None):
         if vis is not None and vis[child] == 0:
             continue
         if draw_edges:
-            cv2.circle(image, (point[0], point[1]), radius, colors['white'],
+            cv2.circle(image, (point[0], point[1]), radius, colors["white"],
                        -1)
             cv2.circle(image, (point[0], point[1]), radius - 1,
                        colors[jcolors[child]], -1)
         else:
-            # cv2.circle(image, (point[0], point[1]), 5, colors['white'], 1)
             cv2.circle(image, (point[0], point[1]), radius - 1,
                        colors[jcolors[child]], 1)
-            # cv2.circle(image, (point[0], point[1]), 5, colors['gray'], -1)
+
         pa_id = parents[child]
         if draw_edges and pa_id >= 0:
             if vis is not None and vis[pa_id] == 0:
@@ -166,7 +165,7 @@ def drawSkeleton(input_image, joints, draw_edges=True, vis=None, radius=None):
                        colors[jcolors[pa_id]], -1)
             
             if child not in ecolors.keys():
-                print('Error in rendering ecolors')
+                print("Error in rendering ecolors")
                 quit()
 
             cv2.line(image, (point[0], point[1]), (point_pa[0], point_pa[1]),
@@ -181,7 +180,7 @@ def drawSkeleton(input_image, joints, draw_edges=True, vis=None, radius=None):
 
     return image
 
-def drawText(input_image, content):
+def draw_text(input_image, content):
     """
     The content is a dict. draws key: val on image
     Assumes key is str, val is float
@@ -206,7 +205,7 @@ def drawText(input_image, content):
     
     return image
 
-def visualize_reconstruction(img, img_size, gt_kp, vertices, pred_kp, camera, renderer, color='pink', focal_length=1000):
+def visualize_reconstruction(img, img_size, gt_kp, vertices, pred_kp, camera, renderer, color="pink", focal_length=1000):
     """
     Overlays gt_kp and pred_kp on img.
     Draws vert with text.
@@ -222,19 +221,19 @@ def visualize_reconstruction(img, img_size, gt_kp, vertices, pred_kp, camera, re
                                img=img, use_bg=True,
                                focal_length=focal_length,
                                body_color=color)
-    rend_img = drawText(rend_img, debug_text)
+    rend_img = draw_text(rend_img, debug_text)
 
     # Draw skeleton
     gt_joint = ((gt_kp[:, :2] + 1) * 0.5) * img_size
     pred_joint = ((pred_kp + 1) * 0.5) * img_size
-    img_with_gt = drawSkeleton( img, gt_joint, draw_edges=False, vis=gt_vis)
-    skel_img = drawSkeleton(img_with_gt, pred_joint)
+    img_with_gt = draw_skeleton( img, gt_joint, draw_edges=False, vis=gt_vis)
+    skel_img = draw_skeleton(img_with_gt, pred_joint)
 
     combined = np.hstack([skel_img, rend_img])
 
     return combined
 
-def visualize_reconstruction_test(img, img_size, gt_kp, vertices, pred_kp, camera, renderer, score, color='pink', focal_length=1000):
+def visualize_reconstruction_test(img, img_size, gt_kp, vertices, pred_kp, camera, renderer, score, color="pink", focal_length=1000):
     """
     Overlays gt_kp and pred_kp on img.
     Draws vert with text.
@@ -250,18 +249,17 @@ def visualize_reconstruction_test(img, img_size, gt_kp, vertices, pred_kp, camer
                                img=img, use_bg=True,
                                focal_length=focal_length,
                                body_color=color)
-    rend_img = drawText(rend_img, debug_text)
+    rend_img = draw_text(rend_img, debug_text)
 
     # Draw skeleton
     gt_joint = ((gt_kp[:, :2] + 1) * 0.5) * img_size
     pred_joint = ((pred_kp + 1) * 0.5) * img_size
-    img_with_gt = drawSkeleton(img, gt_joint, draw_edges=False, vis=gt_vis)
-    skel_img = drawSkeleton(img_with_gt, pred_joint)
+    img_with_gt = draw_skeleton(img, gt_joint, draw_edges=False, vis=gt_vis)
+    skel_img = draw_skeleton(img_with_gt, pred_joint)
 
     combined = np.hstack([skel_img, rend_img])
 
     return combined
-
 
 def visualize_reconstruction_and_att(img, img_size, vertices_full, vertices_2d, camera, renderer, ref_points, attention, focal_length=1000):
     """
@@ -274,7 +272,7 @@ def visualize_reconstruction_and_att(img, img_size, vertices_full, vertices_2d, 
     camera_t = np.array([camera[1], camera[2], 2*focal_length/(res * camera[0] +1e-9)])
     rend_img = renderer.render(vertices_full, camera_t=camera_t,
                                img=img, use_bg=True, 
-                               focal_length=focal_length, body_color='light_blue')
+                               focal_length=focal_length, body_color="light_blue")
 
 
     heads_num, vertex_num, _ = attention.shape
@@ -343,8 +341,7 @@ def visualize_reconstruction_and_att(img, img_size, vertices_full, vertices_2d, 
 
     return final
 
-
-def visualize_reconstruction_and_att_local(img, img_size, vertices_full, vertices_2d, camera, renderer, ref_points, attention, color='light_blue', focal_length=1000):
+def visualize_reconstruction_and_att_local(img, img_size, vertices_full, vertices_2d, camera, renderer, ref_points, attention, color="light_blue", focal_length=1000):
     """
     Overlays gt_kp and pred_kp on img.
     Draws vert with text.
@@ -412,8 +409,7 @@ def visualize_reconstruction_and_att_local(img, img_size, vertices_full, vertice
 
     return final
 
-
-def visualize_reconstruction_wo_text(img, img_size, vertices, camera, renderer, color='pink', focal_length=1000):
+def visualize_reconstruction_wo_text(img, img_size, vertices, camera, renderer, color="pink", focal_length=1000):
     """
     Overlays gt_kp and pred_kp on img.
     Draws vert without text.
@@ -432,7 +428,6 @@ def visualize_reconstruction_wo_text(img, img_size, vertices, camera, renderer, 
 
     return combined
 
-
 def plot_one_line(ref, vertex, img, color_index, alpha=0.0, line_thickness=None):
     # 13,6,7,8,3,4,5
     # att_colors = [(255, 221, 104), (255, 255, 0), (255, 215, 227),  (210, 240, 119), \
@@ -449,7 +444,6 @@ def plot_one_line(ref, vertex, img, color_index, alpha=0.0, line_thickness=None)
     c1, c2 = (int(ref[0]), int(ref[1])), (int(vertex[0]), int(vertex[1]))
     cv2.line(overlay, c1, c2, (alpha*float(color[0])/255,alpha*float(color[1])/255,alpha*float(color[2])/255) , thickness=tl, lineType=cv2.LINE_AA)
     cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0, img)
-
 
 def cam2pixel(cam_coord, f, c):
     x = cam_coord[:, 0] / (cam_coord[:, 2]) * f[0] + c[0]
@@ -528,7 +522,7 @@ def visualize_mesh_wo_text( renderer,
         vertices = pred_vertices[i].cpu().numpy()
         cam = pred_camera[i].cpu().numpy()
         # Visualize reconstruction only
-        rend_img = visualize_reconstruction_wo_text(img, 224, vertices, cam, renderer, color='hand')
+        rend_img = visualize_reconstruction_wo_text(img, 224, vertices, cam, renderer, color="hand")
         rend_img = rend_img.transpose(2,0,1)
         rend_imgs.append(torch.from_numpy(rend_img))   
     rend_imgs = makeGrid(rend_imgs, nrow=1)
@@ -540,7 +534,7 @@ class Renderer(object):
     """
 
     def __init__(self, width=800, height=600, near=0.5, far=1000, faces=None):
-        self.colors = {'hand': [.9, .9, .9], 'pink': [.9, .7, .7], 'light_blue': [0.65098039, 0.74117647, 0.85882353] }
+        self.colors = {"hand": [.9, .9, .9], "pink": [.9, .7, .7], "light_blue": [0.65098039, 0.74117647, 0.85882353] }
         self.width = width
         self.height = height
         self.faces = faces
@@ -579,9 +573,9 @@ class Renderer(object):
                       np.mean(vertices, axis=0)[2])
         far = dist + 20
 
-        self.renderer.frustum = {'near': 1.0, 'far': far,
-                                 'width': width,
-                                 'height': height}
+        self.renderer.frustum = {"near": 1.0, "far": far,
+                                 "width": width,
+                                 "height": height}
 
         if img is not None:
             if use_bg:
@@ -591,7 +585,7 @@ class Renderer(object):
                     img) * np.array(bg_color)
 
         if body_color is None:
-            color = self.colors['light_blue']
+            color = self.colors["light_blue"]
         else:
             color = self.colors[body_color]
 
@@ -608,7 +602,7 @@ class Renderer(object):
             f=self.renderer.f,
             v=self.renderer.v,
             num_verts=self.renderer.v.shape[0],
-            light_pos=rotateY(np.array([-200, -100, -100]), yrot),
+            light_pos=rotate_y(np.array([-200, -100, -100]), yrot),
             vc=albedo,
             light_color=np.array([1, 1, 1]))
 
@@ -617,7 +611,7 @@ class Renderer(object):
             f=self.renderer.f,
             v=self.renderer.v,
             num_verts=self.renderer.v.shape[0],
-            light_pos=rotateY(np.array([800, 10, 300]), yrot),
+            light_pos=rotate_y(np.array([800, 10, 300]), yrot),
             vc=albedo,
             light_color=np.array([1, 1, 1]))
 
@@ -626,14 +620,13 @@ class Renderer(object):
             f=self.renderer.f,
             v=self.renderer.v,
             num_verts=self.renderer.v.shape[0],
-            light_pos=rotateY(np.array([-500, 500, 1000]), yrot),
+            light_pos=rotate_y(np.array([-500, 500, 1000]), yrot),
             vc=albedo,
             light_color=np.array([.7, .7, .7]))
 
         return self.renderer.r
 
-
-    def renderVertexColor(self, vertices, faces=None, img=None,
+    def render_vertex_color(self, vertices, faces=None, img=None,
                camera_t=np.zeros([3], dtype=np.float32),
                camera_rot=np.zeros([3], dtype=np.float32),
                camera_center=None,
@@ -666,9 +659,9 @@ class Renderer(object):
                       np.mean(vertices, axis=0)[2])
         far = dist + 20
 
-        self.renderer.frustum = {'near': 1.0, 'far': far,
-                                 'width': width,
-                                 'height': height}
+        self.renderer.frustum = {"near": 1.0, "far": far,
+                                 "width": width,
+                                 "height": height}
 
         if img is not None:
             if use_bg:
@@ -678,7 +671,7 @@ class Renderer(object):
                     img) * np.array(bg_color)
 
         if vertex_color is None:
-            vertex_color = self.colors['light_blue']
+            vertex_color = self.colors["light_blue"]
 
 
         self.renderer.set(v=vertices, f=faces,
@@ -691,7 +684,7 @@ class Renderer(object):
             f=self.renderer.f,
             v=self.renderer.v,
             num_verts=self.renderer.v.shape[0],
-            light_pos=rotateY(np.array([-200, -100, -100]), yrot),
+            light_pos=rotate_y(np.array([-200, -100, -100]), yrot),
             vc=albedo,
             light_color=np.array([1, 1, 1]))
 
@@ -700,7 +693,7 @@ class Renderer(object):
             f=self.renderer.f,
             v=self.renderer.v,
             num_verts=self.renderer.v.shape[0],
-            light_pos=rotateY(np.array([800, 10, 300]), yrot),
+            light_pos=rotate_y(np.array([800, 10, 300]), yrot),
             vc=albedo,
             light_color=np.array([1, 1, 1]))
 
@@ -709,7 +702,7 @@ class Renderer(object):
             f=self.renderer.f,
             v=self.renderer.v,
             num_verts=self.renderer.v.shape[0],
-            light_pos=rotateY(np.array([-500, 500, 1000]), yrot),
+            light_pos=rotate_y(np.array([-500, 500, 1000]), yrot),
             vc=albedo,
             light_color=np.array([.7, .7, .7]))
 

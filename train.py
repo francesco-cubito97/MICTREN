@@ -11,9 +11,10 @@ import datetime
 import numpy as np
 import time
 import torch
+import os.path as path
 
 from utils.metric_utils import AverageMeter
-from utils.training_utils import adjust_learning_rate, betas_loss, save_checkpoint, joints_3d_loss, joints_2d_loss, pose_loss, vertices_loss
+from utils.training_utils import adjust_learning_rate, betas_loss, save_checkpoint, joints_3d_loss, joints_2d_loss, pose_loss, vertices_loss, normal_vector_loss, edge_length_loss
 from utils.geometric_utils import orthographic_projection
 from utils.render import visualize_mesh
 from configurations import mano_config as cfg
@@ -49,6 +50,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     log_loss_2djoints = AverageMeter()
     log_loss_3djoints = AverageMeter()
     log_loss_vertices = AverageMeter()
+    log_loss_mesh = AverageMeter()
     
     for iteration, (img_keys, images, annotations) in enumerate(train_dataloader):
         
@@ -93,8 +95,8 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         gt_3d_joints_with_tag[:, :, :3] = gt_3d_joints
 
         # Prepare masks for 3d joints/vertices modeling
-        mjm_mask_ = mjm_mask.expand(-1, -1, 1491)
-        mvm_mask_ = mvm_mask.expand(-1, -1, 1491)
+        mjm_mask_ = mjm_mask.expand(-1, -1, int(args.input_feat_dim.split(",")[0]))
+        mvm_mask_ = mvm_mask.expand(-1, -1, int(args.input_feat_dim.split(",")[0]))
         meta_masks = torch.cat([mjm_mask_, mvm_mask_], dim=1)
         
         # Forward-pass
@@ -114,7 +116,11 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
 
         # Compute 3d vertices loss
         loss_vertices = ( args.vloss_w_sub * vertices_loss(criterion_vertices, pred_vertices_sub, gt_vertices_sub, has_mesh) + \
-                            args.vloss_w_full * vertices_loss(criterion_vertices, pred_vertices, gt_vertices, has_mesh) )
+                          args.vloss_w_full * vertices_loss(criterion_vertices, pred_vertices, gt_vertices, has_mesh) )
+
+        # Compute normal vector loss for mesh
+        loss_mesh = ( args.vloss_w_sub * normal_vector_loss(mano_model.faces, pred_vertices_sub, gt_vertices_sub) + \
+                      args.vloss_w_full * normal_vector_loss(mano_model.faces, pred_vertices, gt_vertices) )
 
         # Compute pose and betas losses
         loss_pose = pose_loss(criterion_pose, pred_pose, gt_pose)
@@ -127,6 +133,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         loss = args.joints_loss_weight * loss_3d_joints + \
                 args.vertices_loss_weight * loss_vertices + \
                 args.vertices_loss_weight * loss_2d_joints + \
+                args.vertices_loss_weight * loss_mesh + \
                 args.pose_loss_weight * loss_pose + \
                 args.betas_loss_weight * loss_betas
 
@@ -136,6 +143,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         log_loss_3djoints.update(loss_3d_joints.item(), batch_size)
         log_loss_2djoints.update(loss_2d_joints.item(), batch_size)
         log_loss_vertices.update(loss_vertices.item(), batch_size)
+        log_loss_mesh.update(loss_mesh.item(), batch_size)
         log_losses.update(loss.item(), batch_size)
         
         # Backward-pass
@@ -162,20 +170,24 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         if iteration % args.logging_steps == 0 or iteration == max_iter:
             eta_seconds = batch_time.avg * (max_iter - iteration)
             eta_string = str(datetime.timedelta(seconds=int(eta_seconds)))
-            print("RUN",
-                ' '.join(
-                ['eta: {eta}', 'epoch: {ep}', 'iter: {iter}', 'max mem : {memory:.0f}',]
-                ).format(eta=eta_string, ep=epoch, iter=iteration, 
-                    memory=torch.cuda.max_memory_allocated() / 1024.0 / 1024.0) 
-                + '  loss: {:.4f}, 3d joint loss: {:.4f}, 2d joint loss: {:.4f}, compute time avg: {:.4f}, data time avg: {:.4f}, lr: {:.6f}'.format(
-                    log_losses.avg, log_loss_3djoints.avg, log_loss_2djoints.avg, batch_time.avg, data_time.avg, 
-                    optimizer.param_groups[0]['lr'])
+            print("RUN ",
+                f"eta: {eta_string}", 
+                f"epoch: {epoch}", 
+                f"iter: {iteration}", 
+                f"max mem : {(torch.cuda.max_memory_allocated() / 1024.0 / 1024.0):.0f}",
+                f"tot. loss: {log_losses.avg:.4f}", 
+                f"3d joint loss: {log_loss_3djoints.avg:.4f}", 
+                f"2d joint loss: {log_loss_2djoints.avg:.4f}", 
+                f"compute time avg: {batch_time.avg:.4f}", 
+                f"data time avg: {data_time.avg:.4f}", 
+                f"lr: {optimizer.param_groups[0]['lr']:.6f}"
             )
                 
         # Save a checkpoint and visualize partial results obtained
         if iteration % iters_per_epoch == 0:
             if epoch%5 == 0:
                 save_checkpoint(Mictren_model, args, epoch, iteration, optimizer, scaler)
+
                 visual_imgs = visualize_mesh(renderer,
                                             annotations['ori_img'].detach(),
                                             annotations['joints_2d'].detach(),
@@ -185,13 +197,11 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                 visual_imgs = torch.einsum("abc -> bca", visual_imgs)
                 visual_imgs = np.asarray(visual_imgs)
 
-                stamp = str(epoch) + '_' + str(iteration)
-                temp_fname = args.output_dir + '/visual_' + stamp + '.jpg'
-                cv2.imwrite(temp_fname, np.asarray(visual_imgs[:, :, ::-1]*255))
+                fname = path.join(args.output_dir, f"visual_{epoch}_{iteration}.jpg")
+                cv2.imwrite(fname, np.asarray(visual_imgs[:, :, ::-1]*255))
 
     total_training_time = time.time() - start_training_time
-    total_time_str = str(datetime.timedelta(seconds=total_training_time))
-    print("RUN", 'Total training time: {} ({:.4f} s / iter)'.format(
-        total_time_str, total_training_time / max_iter)
-    )
+    total_time_str = str(datetime.timedelta(seconds=int(total_training_time)))
+    print("RUN", f"Total training time: {total_time_str} ({(total_training_time / max_iter):.4f} s / iter)")
+    
     save_checkpoint(Mictren_model, args, epoch, iteration)

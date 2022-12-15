@@ -134,9 +134,9 @@ class HandMeshTSVDataset(object):
         self.rot_factor = 90 # Random rotation in the range [-rot_factor, rot_factor]
         self.img_res = 224
         self.image_keys = self.prepare_image_keys()
-        self.joints_definition = ('Wrist', 'Thumb_1', 'Thumb_2', 'Thumb_3', 'Thumb_4', 'Index_1', 'Index_2', 'Index_3', 'Index_4', 'Middle_1', 
+        self.joints_definition = ('Palm', 'Thumb_1', 'Thumb_2', 'Thumb_3', 'Thumb_4', 'Index_1', 'Index_2', 'Index_3', 'Index_4', 'Middle_1', 
                                 'Middle_2', 'Middle_3', 'Middle_4', 'Ring_1', 'Ring_2', 'Ring_3', 'Ring_4', 'Pinky_1', 'Pinky_2', 'Pinky_3', 'Pinky_4')
-        self.root_index = self.joints_definition.index('Wrist')
+        self.root_index = self.joints_definition.index('Palm')
 
     def get_tsv_file(self, tsv_file):
         if tsv_file:
@@ -338,7 +338,7 @@ class HandMeshTSVDataset(object):
         # Store image before normalization to use it in visualization
         transfromed_img = self.normalize_img(img)
 
-        # normalize 3d pose by aligning the wrist as the root (at origin)
+        # normalize 3d pose by aligning the palm as the root (at origin)
         root_coord = joints_3d[self.root_index,:-1]
         joints_3d[:,:-1] = joints_3d[:,:-1] - root_coord[None,:]
         # 3d pose augmentation (random flip + rotation, consistent to image and SMPL)

@@ -139,7 +139,7 @@ def main(args):
                 arg_param = getattr(args, param)
                 config_param = getattr(config, param)
                 if arg_param > 0 and arg_param != config_param:
-                    print("MAIN", "Update config parameter {}: {} -> {}".format(param, config_param, arg_param))
+                    print("MAIN", f"Update config parameter {param}: {config_param} -> {arg_param}")
                     setattr(config, param, arg_param)
 
             # init a transformer encoder and append it to a list
@@ -156,21 +156,21 @@ def main(args):
         # Compose the final neural network
         trans_layers = torch.nn.Sequential(*trans_layers)
         total_params = sum(p.numel() for p in trans_layers.parameters())
-        print("MAIN", "Transformers total parameters: {}".format(total_params))
+        print("MAIN", f"Transformers total parameters: {total_params}")
         backbone_total_params = sum(p.numel() for p in backbone.parameters())
-        print("MAIN", "Backbone total parameters: {}".format(backbone_total_params))
+        print("MAIN", f"Backbone total parameters: {backbone_total_params}")
 
         _network = MICTREN(args, config, backbone, trans_layers)
         
         if args.saved_checkpoint!=None and args.saved_checkpoint!="None":
             # for fine-tuning or resume training or inference, load weights from checkpoint
-            print("MAIN", "Loading state dict from checkpoint {}".format(args.saved_checkpoint))
+            print("MAIN", f"Loading state dict from checkpoint {args.saved_checkpoint}")
             checkpoint = torch.load(args.saved_checkpoint, map_location=torch.device("cpu"))
             _network.load_state_dict(checkpoint, strict=False)
             del checkpoint
         
     _network.to(args.device)
-    print("MAIN", "Training parameters {}".format(args))
+    print("MAIN", f"Training parameters {args}")
 
     if args.type=="test":
         val_dataloader = make_hand_data_loader(args, 

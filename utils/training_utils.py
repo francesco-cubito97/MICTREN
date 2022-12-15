@@ -8,6 +8,8 @@ from __future__ import unicode_literals
 
 import os.path as path
 import torch
+from torch import nn
+import torch.functional as F
 
 from utils.file_utils import create_dir
 
@@ -35,7 +37,7 @@ def save_checkpoint(model, args, epoch, iteration, optimizer, scaler, num_trial=
             pass
 
     if i>=num_trial:
-        print("SAVE_CHECKPOINT", "Failed to save checkpoint after {} trails.".format(num_trial))
+        print("SAVE_CHECKPOINT", f"Failed to save checkpoint after {num_trial} trails.")
     
     return checkpoint_dir
 
@@ -92,6 +94,50 @@ def vertices_loss(criterion_vertices, pred_vertices, gt_vertices, has_smpl=True)
     else:
         return torch.FloatTensor(1).fill_(0.).cuda()
 
+def normal_vector_loss(faces, coord_out, coord_gt):
+    faces = torch.LongTensor(faces).cuda()
+
+    v1_out = coord_out[:, faces[:, 1], :] - coord_out[:, faces[:, 0], :]
+    v1_out = F.normalize(v1_out, p=2, dim=2)  # L2 normalize to make unit vector
+    v2_out = coord_out[:, faces[:, 2], :] - coord_out[:, faces[:, 0], :]
+    v2_out = F.normalize(v2_out, p=2, dim=2)  # L2 normalize to make unit vector
+    v3_out = coord_out[:, faces[:, 2], :] - coord_out[:, faces[:, 1], :]
+    v3_out = F.normalize(v3_out, p=2, dim=2)  # L2 nroamlize to make unit vector
+
+    v1_gt = coord_gt[:, faces[:, 1], :] - coord_gt[:, faces[:, 0], :]
+    v1_gt = F.normalize(v1_gt, p=2, dim=2)  # L2 normalize to make unit vector
+    v2_gt = coord_gt[:, faces[:, 2], :] - coord_gt[:, faces[:, 0], :]
+    v2_gt = F.normalize(v2_gt, p=2, dim=2)  # L2 normalize to make unit vector
+    normal_gt = torch.cross(v1_gt, v2_gt, dim=2)
+    normal_gt = F.normalize(normal_gt, p=2, dim=2)  # L2 normalize to make unit vector
+
+    cos1 = torch.abs(torch.sum(v1_out * normal_gt, 2, keepdim=True))
+    cos2 = torch.abs(torch.sum(v2_out * normal_gt, 2, keepdim=True))
+    cos3 = torch.abs(torch.sum(v3_out * normal_gt, 2, keepdim=True))
+    loss = torch.cat((cos1, cos2, cos3), 1)
+    return loss.mean()
+
+
+def edge_length_loss(faces, coord_out, coord_gt):
+
+        faces = torch.LongTensor(faces).cuda()
+
+        d1_out = torch.sqrt(
+            torch.sum((coord_out[:, faces[:, 0], :] - coord_out[:, faces[:, 1], :]) ** 2, 2, keepdim=True))
+        d2_out = torch.sqrt(
+            torch.sum((coord_out[:, faces[:, 0], :] - coord_out[:, faces[:, 2], :]) ** 2, 2, keepdim=True))
+        d3_out = torch.sqrt(
+            torch.sum((coord_out[:, faces[:, 1], :] - coord_out[:, faces[:, 2], :]) ** 2, 2, keepdim=True))
+
+        d1_gt = torch.sqrt(torch.sum((coord_gt[:, faces[:, 0], :] - coord_gt[:, faces[:, 1], :]) ** 2, 2, keepdim=True))
+        d2_gt = torch.sqrt(torch.sum((coord_gt[:, faces[:, 0], :] - coord_gt[:, faces[:, 2], :]) ** 2, 2, keepdim=True))
+        d3_gt = torch.sqrt(torch.sum((coord_gt[:, faces[:, 1], :] - coord_gt[:, faces[:, 2], :]) ** 2, 2, keepdim=True))
+ 
+        diff1 = torch.abs(d1_out - d1_gt)
+        diff2 = torch.abs(d2_out - d2_gt)
+        diff3 = torch.abs(d3_out - d3_gt)
+        loss = torch.cat((diff1, diff2, diff3), 1)
+        return loss.mean()
 
 def pose_loss(criterion_pose, pred_pose, gt_pose):
     """

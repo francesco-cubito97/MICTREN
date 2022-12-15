@@ -9,11 +9,14 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import torch
-import os
 import cv2
-import numpy as np
 import json
+import numpy as np
+import os
+import os.path as path
+import torch
+
+
 
 from configurations import mano_config as cfg
 from utils.geometric_utils import orthographic_projection
@@ -38,9 +41,9 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
             pred_camera, pred_3d_joints, pred_vertices_sub, pred_vertices, pred_pose, pred_betas = Mictren_model(images, mano_model, mesh_sampler)
 
             # Take 3d joints from full mesh
-            pred_3d_wrist = pred_3d_joints[:, cfg.ROOT_INDEX, :]
-            pred_3d_joints_from_mesh = pred_3d_joints - pred_3d_wrist[:, None, :]
-            pred_vertices = pred_vertices - pred_3d_wrist[:, None, :]
+            pred_3d_palm = pred_3d_joints[:, cfg.ROOT_INDEX, :]
+            pred_3d_joints_from_mesh = pred_3d_joints - pred_3d_palm[:, None, :]
+            pred_vertices = pred_vertices - pred_3d_palm[:, None, :]
 
             for batch in range(batch_size):
                 fname_output_save.append(img_keys[batch])
@@ -66,8 +69,8 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
                 visual_imgs = torch.einsum(visual_imgs, "abc -> bca")
                 visual_imgs = np.asarray(visual_imgs)
                 
-                inference_setting = "scale{02d}_rot{s}".format(int(args.sc*10), str(int(args.rot)))
-                temp_fname = args.output_dir + "/" + args.saved_checkpoint[0:-9] + "freihand_results_"+inference_setting+"_batch"+str(idx)+".jpg"
+                inference_setting = f"scale{int(args.sc*10):02d}_rot{str(int(args.rot)):s}"
+                temp_fname = path.join(args.output_dir, args.saved_checkpoint[0:-9] + "freihand_results_"+inference_setting+"_batch"+str(idx)+".jpg")
                 cv2.imwrite(temp_fname, np.asarray(visual_imgs[:, :, ::-1]*255))
 
     # Saving predictions into a zip file
@@ -78,14 +81,14 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
 
     run_exp_name = args.saved_checkpoint.split('/')[-3]
     run_ckpt_name = args.saved_checkpoint.split('/')[-2].split('-')[1]
-    inference_setting = "scale{02d}_rot{s}".format(int(args.sc*10), str(int(args.rot)))
+    inference_setting = f"scale{int(args.sc*10):02d}_rot{str(int(args.rot)):s}"
     resolved_submit_cmd = "zip " + args.output_dir + "/" + run_exp_name + "-ckpt" + run_ckpt_name + "-" + inference_setting + "-pred.zip " +  "pred.json"
     
-    print("RUN_INFERENCE", "---------Executing: {}---------".format(resolved_submit_cmd))
+    print("RUN_INFERENCE", f"---------Executing: {resolved_submit_cmd}---------")
     os.system(resolved_submit_cmd)
     
-    resolved_submit_cmd = 'rm pred.json'
-    print("RUN_INFERENCE", "Executing: {}".format(resolved_submit_cmd))
+    resolved_submit_cmd = "rm pred.json"
+    print("RUN_INFERENCE", f"Executing: {resolved_submit_cmd}")
     os.system(resolved_submit_cmd)
     
     return
