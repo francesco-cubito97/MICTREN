@@ -36,6 +36,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     criterion_vertices = torch.nn.L1Loss().to(args.device)
     criterion_pose = torch.nn.L1Loss().to(args.device)
     criterion_betas = torch.nn.L1Loss().to(args.device)
+    normal_vector_loss = NormalVectorLoss(mano_model.faces)
 
     start_training_time = time.time()
     end = time.time()
@@ -51,8 +52,6 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     log_loss_3djoints = AverageMeter()
     log_loss_vertices = AverageMeter()
     log_loss_mesh = AverageMeter()
-    
-    normal_vector_loss = NormalVectorLoss(mano_model.faces)
 
     for iteration, (img_keys, images, annotations) in enumerate(train_dataloader):
         
