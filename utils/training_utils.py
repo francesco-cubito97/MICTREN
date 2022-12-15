@@ -9,7 +9,7 @@ from __future__ import unicode_literals
 import os.path as path
 import torch
 from torch import nn
-import torch.functional as F
+import torch.nn.functional as F
 
 from utils.file_utils import create_dir
 
