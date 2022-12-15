@@ -15,9 +15,9 @@ import os.path as path
 
 data_path = 'extra_data'
 
-JOINT_REGRESSOR_TRAIN_EXTRA = path.join(data_path, '/J_regressor_extra.npy')
+JOINT_REGRESSOR_TRAIN_EXTRA = path.join(data_path, 'J_regressor_extra.npy')
 MANO_FILE = path.join(data_path, "MANO_RIGHT.pkl")
-MANO_sampling_matrix = path.join(data_path, '/mano_downsampling.npz')
+MANO_sampling_matrix = path.join(data_path, 'mano_downsampling.npz')
 
 """
 Joint definition and mesh topology taken from 
