@@ -13,7 +13,7 @@ from __future__ import unicode_literals
 
 import os.path as path
 
-data_path = '/extra_data'
+data_path = 'extra_data'
 
 JOINT_REGRESSOR_TRAIN_EXTRA = path.join(data_path, '/J_regressor_extra.npy')
 MANO_FILE = path.join(data_path, "MANO_RIGHT.pkl")
