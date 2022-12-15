@@ -14,7 +14,7 @@ import torch
 import os.path as path
 
 from utils.metric_utils import AverageMeter
-from utils.training_utils import adjust_learning_rate, betas_loss, save_checkpoint, joints_3d_loss, joints_2d_loss, pose_loss, vertices_loss, normal_vector_loss, edge_length_loss
+from utils.training_utils import adjust_learning_rate, betas_loss, save_checkpoint, joints_3d_loss, joints_2d_loss, pose_loss, vertices_loss, NormalVectorLoss
 from utils.geometric_utils import orthographic_projection
 from utils.render import visualize_mesh
 from configurations import mano_config as cfg
@@ -52,6 +52,8 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     log_loss_vertices = AverageMeter()
     log_loss_mesh = AverageMeter()
     
+    normal_vector_loss = NormalVectorLoss(mano_model.faces)
+
     for iteration, (img_keys, images, annotations) in enumerate(train_dataloader):
         
         iteration += 1
@@ -119,8 +121,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                           args.vloss_w_full * vertices_loss(criterion_vertices, pred_vertices, gt_vertices, has_mesh) )
 
         # Compute normal vector loss for mesh
-        loss_mesh = ( args.vloss_w_sub * normal_vector_loss(mano_model.faces, pred_vertices_sub, gt_vertices_sub) + \
-                      args.vloss_w_full * normal_vector_loss(mano_model.faces, pred_vertices, gt_vertices) )
+        loss_mesh = args.vloss_w_full * normal_vector_loss(pred_vertices, gt_vertices) 
 
         # Compute pose and betas losses
         loss_pose = pose_loss(criterion_pose, pred_pose, gt_pose)
