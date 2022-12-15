@@ -113,6 +113,7 @@ def main(args):
 
     input_feat_dim = [int(item) for item in args.input_feat_dim.split(",")]
     hidden_feat_dim = [int(item) for item in args.hidden_feat_dim.split(",")]
+    
     # The final layer will output the 3D joints + 3D mesh vertices
     output_feat_dim = input_feat_dim[1:] + [3]
     
