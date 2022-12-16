@@ -53,6 +53,8 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     log_loss_vertices = AverageMeter()
     log_loss_mesh = AverageMeter()
 
+    istry = True
+
     for iteration, (img_keys, images, annotations) in enumerate(train_dataloader):
         
         iteration += 1
@@ -186,8 +188,10 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
             )
                 
         # Save a checkpoint and visualize partial results obtained
-        if iteration % iters_per_epoch == 0:
-            if epoch%5 == 0:
+        if iteration % iters_per_epoch == 0 or istry == True:
+            if epoch%5 == 0 or istry == True:
+                istry = False
+
                 save_checkpoint(Mictren_model, args, epoch, iteration, optimizer, scaler)
 
                 visual_imgs = visualize_mesh(renderer,
