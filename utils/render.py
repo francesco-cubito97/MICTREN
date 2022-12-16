@@ -477,7 +477,7 @@ def visualize_mesh( renderer,
         img = images[i].cpu().numpy().transpose(1,2,0)
         
         # White background image for mesh and skeleton
-        img1 = np.zeros([512,512,3],dtype=np.uint8)
+        img1 = np.zeros([img.shape[0],img.shape[1],3],dtype=np.uint8)
         img1.fill(255)
         
         # Get LSP keypoints from the full list of keypoints
