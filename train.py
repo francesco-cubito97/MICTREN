@@ -199,7 +199,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                                             annotations['joints_2d'].detach(),
                                             pred_vertices.detach(), 
                                             pred_camera.detach(),
-                                            pred_2d_joints.detach())
+                                            pred_2d_joints_from_mesh.detach())
                 visual_imgs = torch.einsum("abc -> bca", visual_imgs)
                 visual_imgs = np.asarray(visual_imgs)
 

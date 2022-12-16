@@ -477,8 +477,8 @@ def visualize_mesh( renderer,
         img = images[i].cpu().numpy().transpose(1,2,0)
         
         # White background image for mesh and skeleton
-        img_1 = np.zeros([512,512,3],dtype=np.uint8)
-        img_1.fill(255)
+        img1 = np.zeros([512,512,3],dtype=np.uint8)
+        img1.fill(255)
         
         # Get LSP keypoints from the full list of keypoints
         gt_keypoints_2d_ = gt_keypoints_2d[i, to_lsp]
@@ -491,11 +491,11 @@ def visualize_mesh( renderer,
         # Visualize reconstruction and detected pose
         rend_img = visualize_reconstruction(img, 224, gt_keypoints_2d_, vertices, pred_keypoints_2d_, cam, renderer)
         rend_img = rend_img.transpose(2,0,1)
-        rend_img2 = visualize_reconstruction(img, 224, gt_keypoints_2d_, vertices, pred_keypoints_2d_, cam, renderer, True)
+        rend_img2 = visualize_reconstruction(img1, 224, gt_keypoints_2d_, vertices, pred_keypoints_2d_, cam, renderer, True)
         rend_img2 = rend_img2.transpose(2,0,1)
         
         rend_imgs.append(torch.from_numpy(rend_img))
-        rend_imgs.append(rend_img2)   
+        rend_imgs.append(torch.from_numpy(rend_img2))   
     
     rend_imgs = makeGrid(rend_imgs, nrow=1)
     return rend_imgs
