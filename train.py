@@ -199,7 +199,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                 visual_imgs = visualize_mesh(renderer,
                                             annotations['ori_img'].detach(),
                                             annotations['joints_2d'].detach(),
-                                            gt_vertices,
+                                            gt_vertices*1000.0,
                                             pred_vertices.detach(), 
                                             pred_camera.detach(),
                                             pred_2d_joints_from_mesh.detach())
