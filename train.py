@@ -85,8 +85,6 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         # Generate mesh from pose and betas
         gt_vertices, gt_3d_joints = mano_model.layer(gt_pose, gt_betas)
         
-        gt_vx = gt_vertices
-        
         gt_vertices = gt_vertices/1000.0
         gt_3d_joints = gt_3d_joints/1000.0
 
@@ -201,7 +199,6 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                 visual_imgs = visualize_mesh(renderer,
                                             annotations['ori_img'].detach(),
                                             annotations['joints_2d'].detach(),
-                                            gt_vx.detach(),
                                             pred_vertices.detach(), 
                                             pred_camera.detach(),
                                             pred_2d_joints_from_mesh.detach())
@@ -209,7 +206,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                 visual_imgs = np.asarray(visual_imgs)
 
                 fname = path.join(args.output_dir, f"visual_{epoch}_{iteration}.jpg")
-                cv2.imwrite(fname, np.asarray(visual_imgs[:, :, ::-1]*255))
+                cv2.imwrite(fname, np.asarray(visual_imgs[:, :, ::]*255))
 
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=int(total_training_time)))

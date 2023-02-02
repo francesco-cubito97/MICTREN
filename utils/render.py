@@ -205,7 +205,7 @@ def draw_text(input_image, content):
     
     return image
 
-def visualize_reconstruction(img, img_size, gt_joints_2d, gt_vertices, pred_vertices, pred_joints, cam_params, renderer, color="pink", focal_length=1000):
+def visualize_reconstruction(img, img_size, gt_joints_2d, pred_vertices, pred_joints, cam_params, renderer, color="pink", focal_length=1000):
     """
     Overlays gt_keypoints and pred_kp on img.
     Draws vert with text.
@@ -227,16 +227,10 @@ def visualize_reconstruction(img, img_size, gt_joints_2d, gt_vertices, pred_vert
                                focal_length=focal_length,
                                body_color=color)
     
-    white_bg_img = np.ones_like(img) * np.array([0., 0., 0.])
+    # Create a white background image
+    white_bg_img = np.ones_like(img) * np.array([1., 1., 1.])
     
-    # rend_img_wo_bg = renderer.render(pred_vertices, 
-    #                                  camera_t=camera_t,
-    #                                  img=white_bg_img,
-    #                                  use_bg=True,
-    #                                  focal_length=focal_length,
-    #                                  body_color=color)
-    
-    rend_img_wo_bg = renderer.render(gt_vertices, 
+    rend_img_wo_bg = renderer.render(pred_vertices, 
                                      camera_t=camera_t,
                                      img=white_bg_img,
                                      use_bg=True,
@@ -251,8 +245,7 @@ def visualize_reconstruction(img, img_size, gt_joints_2d, gt_vertices, pred_vert
 
     img_with_gt = draw_skeleton(img, gt_joint, draw_edges=False, vis=gt_vis)
     skel_img = draw_skeleton(img_with_gt, pred_joint)
-    #skel_img_wo_bg = draw_skeleton(white_bg_img, pred_joint)
-    skel_img_wo_bg = draw_skeleton(white_bg_img, gt_joint)
+    skel_img_wo_bg = draw_skeleton(white_bg_img, pred_joint)
 
     return np.hstack([skel_img_wo_bg, skel_img, rend_img_wo_bg, rend_img])
 
@@ -475,7 +468,7 @@ def cam2pixel(cam_coord, f, c):
     img_coord = np.concatenate((x[:, None], y[:, None], z[:, None]),1)
     return img_coord
 
-def visualize_mesh(renderer, images, gt_joints_2d, gt_vertices, pred_vertices, pred_camera, pred_keypoints_2d):
+def visualize_mesh(renderer, images, gt_joints_2d, pred_vertices, pred_camera, pred_keypoints_2d):
     
     """
     Visualize mesh and skeleton images
@@ -496,11 +489,10 @@ def visualize_mesh(renderer, images, gt_joints_2d, gt_vertices, pred_vertices, p
         
         # Get predict vertices for the particular example
         vertices = pred_vertices[i].cpu().numpy()
-        gt_vx = gt_vertices.cpu().numpy()
         cam = pred_camera[i].cpu().numpy()
         
         # Visualize reconstruction and detected pose
-        rend_img = visualize_reconstruction(img, img.shape[1], gt_keypoints_2d_, gt_vx, vertices, pred_keypoints_2d_, cam, renderer)
+        rend_img = visualize_reconstruction(img, img.shape[1], gt_keypoints_2d_, vertices, pred_keypoints_2d_, cam, renderer)
         rend_img = rend_img.transpose(2,0,1)
         
         rend_imgs.append(torch.from_numpy(rend_img))   
