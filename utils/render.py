@@ -227,7 +227,7 @@ def visualize_reconstruction(img, img_size, gt_joints_2d, gt_vertices, pred_vert
                                focal_length=focal_length,
                                body_color=color)
     
-    white_bg_img = np.ones_like(img) * np.array([1., 1., 1.])
+    white_bg_img = np.ones_like(img) * np.array([0., 0., 0.])
     
     # rend_img_wo_bg = renderer.render(pred_vertices, 
     #                                  camera_t=camera_t,
