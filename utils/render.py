@@ -244,8 +244,8 @@ def visualize_reconstruction(img, img_size, gt_joints_2d, pred_vertices, pred_jo
 
     img_with_gt = draw_skeleton(img, gt_joint, draw_edges=False, vis=gt_vis)
     skel_img = draw_skeleton(img_with_gt, pred_joint)
-    skel_img_wo_bg = draw_skeleton(white_bg_img, pred_joint)
-
+    #skel_img_wo_bg = draw_skeleton(white_bg_img, pred_joint)
+    skel_img_wo_bg = draw_skeleton(white_bg_img, gt_joint)
     #return np.hstack([skel_img, rend_img])
     return np.hstack([skel_img_wo_bg, skel_img, rend_img_wo_bg, rend_img])
 
