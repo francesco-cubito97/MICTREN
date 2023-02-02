@@ -246,8 +246,8 @@ def visualize_reconstruction(img, img_size, gt_joints_2d, pred_vertices, pred_jo
     skel_img = draw_skeleton(img_with_gt, pred_joint)
     skel_img_wo_bg = draw_skeleton(white_bg_img, pred_joint)
 
-    return np.hstack([skel_img, rend_img])
-    #return np.hstack([skel_img_wo_bg, skel_img, rend_img_wo_bg, rend_img])
+    #return np.hstack([skel_img, rend_img])
+    return np.hstack([skel_img_wo_bg, skel_img, rend_img_wo_bg, rend_img])
 
 def visualize_reconstruction_test(img, img_size, gt_kp, vertices, pred_kp, camera, renderer, score, color="pink", focal_length=1000):
     """
@@ -492,7 +492,7 @@ def visualize_mesh(renderer, images, gt_joints_2d, pred_vertices, pred_camera, p
         cam = pred_camera[i].cpu().numpy()
         
         # Visualize reconstruction and detected pose
-        rend_img = visualize_reconstruction(img, 224, gt_keypoints_2d_, vertices, pred_keypoints_2d_, cam, renderer)
+        rend_img = visualize_reconstruction(img, img.shape[1], gt_keypoints_2d_, vertices, pred_keypoints_2d_, cam, renderer)
         print(f"Rendering images shape: {rend_img.shape}")
         rend_img = rend_img.transpose(2,0,1)
         
