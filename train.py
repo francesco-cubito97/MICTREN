@@ -24,10 +24,6 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     max_iter = len(train_dataloader)
     iters_per_epoch = max_iter // args.num_train_epochs
 
-    optimizer = torch.optim.Adam(params=list(Mictren_model.parameters()),
-                                           lr=args.learning_rate,
-                                           betas=(0.9, 0.999),
-                                           weight_decay=0)
     scaler = torch.cuda.amp.GradScaler()
     
     # Define loss function (criterion) and optimizer
@@ -37,6 +33,11 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     criterion_pose = torch.nn.L1Loss().to(args.device)
     criterion_betas = torch.nn.L1Loss().to(args.device)
     #normal_vector_loss = NormalVectorLoss(mano_model.faces)
+
+    optimizer = torch.optim.Adam(params=list(Mictren_model.parameters()),
+                                           lr=args.learning_rate,
+                                           betas=(0.9, 0.999),
+                                           weight_decay=0)
 
     start_training_time = time.time()
     end = time.time()
