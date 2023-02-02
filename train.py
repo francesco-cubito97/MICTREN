@@ -53,8 +53,6 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     log_loss_vertices = AverageMeter()
     #log_loss_mesh = AverageMeter()
 
-    istry = True
-
     for iteration, (img_keys, images, annotations) in enumerate(train_dataloader):
         
         iteration += 1
@@ -190,24 +188,21 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
             )
                 
         # Save a checkpoint and visualize partial results obtained
-        if iteration % iters_per_epoch == 0 or istry == True:
-            if epoch%5 == 0 or istry == True:
-                istry = False
+        if iteration % iters_per_epoch == 0 and epoch%5 == 0:
+            save_checkpoint(Mictren_model, args, epoch, iteration, optimizer, scaler)
 
-                save_checkpoint(Mictren_model, args, epoch, iteration, optimizer, scaler)
+            visual_imgs = visualize_mesh(renderer,
+                                        annotations['ori_img'].detach(),
+                                        annotations['joints_2d'].detach(),
+                                        pred_vertices.detach(), 
+                                        pred_camera.detach(),
+                                        pred_2d_joints_from_mesh.detach())
+            visual_imgs = torch.einsum("abc -> bca", visual_imgs)
+            visual_imgs = np.asarray(visual_imgs)
 
-                visual_imgs = visualize_mesh(renderer,
-                                            annotations['ori_img'].detach(),
-                                            annotations['joints_2d'].detach(),
-                                            pred_vertices.detach(), 
-                                            pred_camera.detach(),
-                                            pred_2d_joints_from_mesh.detach())
-                visual_imgs = torch.einsum("abc -> bca", visual_imgs)
-                visual_imgs = np.asarray(visual_imgs)
-
-                fname = path.join(args.output_dir, f"visual_{epoch}_{iteration}.jpg")
-                # Invert color channels
-                cv2.imwrite(fname, np.asarray(visual_imgs[:, :, ::-1]*255))
+            fname = path.join(args.output_dir, f"visual_{epoch}_{iteration}.jpg")
+            # Invert color channels
+            cv2.imwrite(fname, np.asarray(visual_imgs[:, :, ::-1]*255))
 
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=int(total_training_time)))
