@@ -496,7 +496,7 @@ def visualize_mesh(renderer, images, gt_joints_2d, gt_vertices, pred_vertices, p
         
         # Get predict vertices for the particular example
         vertices = pred_vertices[i].cpu().numpy()
-        gt_vx = gt_vertices[i].cpu().numpy()
+        gt_vx = gt_vertices.cpu().numpy()
         cam = pred_camera[i].cpu().numpy()
         
         # Visualize reconstruction and detected pose
