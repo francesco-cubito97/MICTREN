@@ -246,7 +246,7 @@ def visualize_reconstruction(img, img_size, gt_joints_2d, pred_vertices, pred_jo
     skel_img = draw_skeleton(img_with_gt, pred_joint)
     skel_img_wo_bg = draw_skeleton(white_bg_img, pred_joint)
 
-    return np.hstack(skel_img, rend_img)
+    return np.hstack([skel_img, rend_img])
     #return np.hstack([skel_img_wo_bg, skel_img, rend_img_wo_bg, rend_img])
 
 def visualize_reconstruction_test(img, img_size, gt_kp, vertices, pred_kp, camera, renderer, score, color="pink", focal_length=1000):
