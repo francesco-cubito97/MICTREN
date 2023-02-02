@@ -27,7 +27,7 @@ def rotate_y(points, angle):
 
 def draw_skeleton(input_image, joints, draw_edges=True, vis=None, radius=None):
     """
-    The joints are 3 x 21
+    The joints are 21, each with 3 dimensions
 
     0: Palm
     1: Thumb_1
@@ -205,39 +205,48 @@ def draw_text(input_image, content):
     
     return image
 
-def visualize_reconstruction(img, img_size, gt_kp, vertices, pred_kp, camera, renderer, color="pink", focal_length=1000, blank=False):
+def visualize_reconstruction(img, img_size, gt_joints_2d, pred_vertices, pred_joints, cam_params, renderer, color="pink", focal_length=1000):
     """
-    Overlays gt_kp and pred_kp on img.
+    Overlays gt_keypoints and pred_kp on img.
     Draws vert with text.
     Renderer is an instance of SMPLRenderer.
     """
-    gt_vis = gt_kp[:, 2].astype(bool)
-    loss = np.sum((gt_kp[gt_vis, :2] - pred_kp[gt_vis])**2)
-    debug_text = {"sc": camera[0], "tx": camera[1], "ty": camera[2], "kpl": loss}
-    # Fix a flength so i can render this with persp correct scale
+    gt_vis = gt_joints_2d[:, 2].astype(bool)
+    loss = np.sum((gt_joints_2d[gt_vis, :2] - pred_joints[gt_vis])**2)
+    
+    debug_text = {"sc": cam_params[0], "tx": cam_params[1], "ty": cam_params[2], "joints loss": loss}
+    
+    # Fixing focal length to render with correct perspective scale
     res = img.shape[1]
-    camera_t = np.array([camera[1], camera[2], 2*focal_length/(res * camera[0] +1e-9)])
-    rend_img = renderer.render(vertices, camera_t=camera_t,
-                               img=img, use_bg=True,
+    camera_t = np.array([cam_params[1], cam_params[2], 2*focal_length/(res * cam_params[0] +1e-9)])
+    
+    rend_img = renderer.render(pred_vertices, 
+                               camera_t=camera_t,
+                               img=img, 
+                               use_bg=True,
                                focal_length=focal_length,
                                body_color=color)
+    
+    white_bg_img = np.ones_like(img) * np.array([1., 1., 1.])
+    
+    rend_img_wo_bg = renderer.render(pred_vertices, 
+                                     camera_t=camera_t,
+                                     img=white_bg_img,
+                                     use_bg=True,
+                                     focal_length=focal_length,
+                                     body_color=color)
+    
     rend_img = draw_text(rend_img, debug_text)
 
     # Draw skeleton
-    gt_joint = ((gt_kp[:, :2] + 1) * 0.5) * img_size
-    pred_joint = ((pred_kp + 1) * 0.5) * img_size
+    gt_joint = ((gt_joints_2d[:, :2] + 1) * 0.5) * img_size
+    pred_joint = ((pred_joints + 1) * 0.5) * img_size
 
-    if not blank:
-        img_with_gt = draw_skeleton( img, gt_joint, draw_edges=False, vis=gt_vis)
-        skel_img = draw_skeleton(img_with_gt, pred_joint)
-        
-        return np.hstack([skel_img, rend_img])
-    
-    img2 = img.copy()
-    blank_img_with_gt = draw_skeleton(img, gt_joint)
-    blank_skel_img = draw_skeleton(img2, pred_joint)
+    img_with_gt = draw_skeleton(img, gt_joint, draw_edges=False, vis=gt_vis)
+    skel_img = draw_skeleton(img_with_gt, pred_joint)
+    skel_img_wo_bg = draw_skeleton(white_bg_img, pred_joint)
 
-    return np.hstack([blank_skel_img, blank_img_with_gt, rend_img])
+    return np.hstack(np.hstack([skel_img_wo_bg, skel_img, rend_img_wo_bg, rend_img]))
 
 def visualize_reconstruction_test(img, img_size, gt_kp, vertices, pred_kp, camera, renderer, score, color="pink", focal_length=1000):
     """
@@ -458,16 +467,13 @@ def cam2pixel(cam_coord, f, c):
     img_coord = np.concatenate((x[:, None], y[:, None], z[:, None]),1)
     return img_coord
 
-def visualize_mesh( renderer,
-                    images,
-                    gt_keypoints_2d,
-                    pred_vertices, 
-                    pred_camera,
-                    pred_keypoints_2d ):
+def visualize_mesh(renderer, images, gt_joints_2d, pred_vertices, pred_camera, pred_keypoints_2d):
+    
     """
     Visualize mesh and skeleton images
     """
-    gt_keypoints_2d = gt_keypoints_2d.cpu().numpy()
+    
+    gt_keypoints_2d = gt_joints_2d.cpu().numpy()
     to_lsp = list(range(21))
     rend_imgs = []
     batch_size = pred_vertices.shape[0]
@@ -475,10 +481,6 @@ def visualize_mesh( renderer,
     # Do visualization for the first images of the batch
     for i in range(min(batch_size, 10)):
         img = images[i].cpu().numpy().transpose(1,2,0)
-        
-        # White background image for mesh and skeleton
-        #img1 = np.zeros([img.shape[0],img.shape[1],3],dtype=np.uint8)
-        #img1.fill(255)
         
         # Get LSP keypoints from the full list of keypoints
         gt_keypoints_2d_ = gt_keypoints_2d[i, to_lsp]
@@ -491,27 +493,21 @@ def visualize_mesh( renderer,
         # Visualize reconstruction and detected pose
         rend_img = visualize_reconstruction(img, 224, gt_keypoints_2d_, vertices, pred_keypoints_2d_, cam, renderer)
         rend_img = rend_img.transpose(2,0,1)
-        #rend_img2 = visualize_reconstruction(img1, 224, gt_keypoints_2d_, vertices, pred_keypoints_2d_, cam, renderer, True)
-        #rend_img2 = rend_img2.transpose(2,0,1)
         
-        rend_imgs.append(torch.from_numpy(rend_img))
-        #rend_imgs.append(torch.from_numpy(rend_img2))   
+        rend_imgs.append(torch.from_numpy(rend_img))   
     
     rend_imgs = makeGrid(rend_imgs, nrow=1)
     return rend_imgs
 
-def visualize_mesh_test( renderer,
-                    images,
-                    gt_keypoints_2d,
-                    pred_vertices, 
-                    pred_camera,
-                    pred_keypoints_2d,
-                    PAmPJPE):
-    """Tensorboard logging."""
+def visualize_mesh_test(renderer, images, gt_keypoints_2d, pred_vertices, pred_camera, pred_keypoints_2d, PAmPJPE):
+    """
+    Mesh visualization with score
+    """
     gt_keypoints_2d = gt_keypoints_2d.cpu().numpy()
     to_lsp = list(range(21))
     rend_imgs = []
     batch_size = pred_vertices.shape[0]
+    
     # Do visualization for the first 6 images of the batch
     for i in range(min(batch_size, 10)):
         img = images[i].cpu().numpy().transpose(1,2,0)
@@ -526,14 +522,14 @@ def visualize_mesh_test( renderer,
         rend_img = visualize_reconstruction_test(img, 224, gt_keypoints_2d_, vertices, pred_keypoints_2d_, cam, renderer, score)
         rend_img = rend_img.transpose(2,0,1)
         rend_imgs.append(torch.from_numpy(rend_img))   
+    
     rend_imgs = makeGrid(rend_imgs, nrow=1)
     return rend_imgs
 
-def visualize_mesh_wo_text( renderer,
-                    images,
-                    pred_vertices, 
-                    pred_camera):
-    """Tensorboard logging."""
+def visualize_mesh_wo_text(renderer, images, pred_vertices, pred_camera):
+    """
+    Mesh visualization without text
+    """
     rend_imgs = []
     batch_size = pred_vertices.shape[0]
     # Do visualization for the first 6 images of the batch

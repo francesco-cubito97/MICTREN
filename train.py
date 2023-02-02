@@ -14,7 +14,7 @@ import torch
 import os.path as path
 
 from utils.metric_utils import AverageMeter
-from utils.training_utils import adjust_learning_rate, betas_loss, save_checkpoint, joints_3d_loss, joints_2d_loss, pose_loss, vertices_loss, NormalVectorLoss
+from utils.training_utils import adjust_learning_rate, betas_loss, save_checkpoint, joints_3d_loss, joints_2d_loss, pose_loss, vertices_loss#, NormalVectorLoss
 from utils.geometric_utils import orthographic_projection
 from utils.render import visualize_mesh
 from configurations import mano_config as cfg
@@ -36,7 +36,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     criterion_vertices = torch.nn.L1Loss().to(args.device)
     criterion_pose = torch.nn.L1Loss().to(args.device)
     criterion_betas = torch.nn.L1Loss().to(args.device)
-    normal_vector_loss = NormalVectorLoss(mano_model.faces)
+    #normal_vector_loss = NormalVectorLoss(mano_model.faces)
 
     start_training_time = time.time()
     end = time.time()
@@ -51,7 +51,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
     log_loss_2djoints = AverageMeter()
     log_loss_3djoints = AverageMeter()
     log_loss_vertices = AverageMeter()
-    log_loss_mesh = AverageMeter()
+    #log_loss_mesh = AverageMeter()
 
     istry = True
 
@@ -84,6 +84,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
 
         # Generate mesh from pose and betas
         gt_vertices, gt_3d_joints = mano_model.layer(gt_pose, gt_betas)
+        
         gt_vertices = gt_vertices/1000.0
         gt_3d_joints = gt_3d_joints/1000.0
 
@@ -122,7 +123,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                           args.vloss_w_full * vertices_loss(criterion_vertices, pred_vertices, gt_vertices, has_mesh) )
 
         # Compute normal vector loss for mesh
-        loss_mesh = args.vloss_w_full * normal_vector_loss(pred_vertices, gt_vertices) 
+        #loss_mesh = args.vloss_w_full * normal_vector_loss(pred_vertices, gt_vertices) 
 
         # Compute pose and betas losses
         loss_pose = pose_loss(criterion_pose, pred_pose, gt_pose)
@@ -135,9 +136,10 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         loss = args.joints_loss_weight * loss_3d_joints + \
                 args.vertices_loss_weight * loss_vertices + \
                 args.vertices_loss_weight * loss_2d_joints + \
-                args.vertices_loss_weight * loss_mesh + \
                 args.pose_loss_weight * loss_pose + \
                 args.betas_loss_weight * loss_betas
+                #args.vertices_loss_weight * loss_mesh + \
+                
 
         # Update logs
         log_loss_pose.update(loss_pose.item(), batch_size)
@@ -145,7 +147,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         log_loss_3djoints.update(loss_3d_joints.item(), batch_size)
         log_loss_2djoints.update(loss_2d_joints.item(), batch_size)
         log_loss_vertices.update(loss_vertices.item(), batch_size)
-        log_loss_mesh.update(loss_mesh.item(), batch_size)
+        #log_loss_mesh.update(loss_mesh.item(), batch_size)
         log_losses.update(loss.item(), batch_size)
         
         # Backward-pass
@@ -179,7 +181,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                 f"max mem : {(torch.cuda.max_memory_allocated() / 1024.0 / 1024.0):.0f}",
                 f"loss: {log_losses.avg:.4f}",
                 f"vertices loss: {log_loss_vertices.avg:.4f}",
-                f"mesh loss: {log_loss_mesh.avg:.4f}", 
+                #f"mesh loss: {log_loss_mesh.avg:.4f}", 
                 f"3d joint loss: {log_loss_3djoints.avg:.4f}", 
                 f"2d joint loss: {log_loss_2djoints.avg:.4f}", 
                 f"compute time avg: {batch_time.avg:.4f}", 
