@@ -206,7 +206,8 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
                 visual_imgs = np.asarray(visual_imgs)
 
                 fname = path.join(args.output_dir, f"visual_{epoch}_{iteration}.jpg")
-                cv2.imwrite(fname, np.asarray(visual_imgs[:, :, ::]*255))
+                # Invert color channels
+                cv2.imwrite(fname, np.asarray(visual_imgs[:, :, ::-1]*255))
 
     total_training_time = time.time() - start_training_time
     total_time_str = str(datetime.timedelta(seconds=int(total_training_time)))
