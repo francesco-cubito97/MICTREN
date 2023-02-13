@@ -167,7 +167,7 @@ def main(args):
 
     elif args.type=="eval" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
         print("MAIN", "Evaluation: Loading from checkpoint {}".format(args.saved_checkpoint))
-        _network = torch.load(args.saved_checkpoint, map_location="cpu")
+        _network.load_state_dict(torch.load(args.saved_checkpoint))
         
     _network.to(args.device)
     print("MAIN", f"Training parameters {args}")
