@@ -167,7 +167,8 @@ def main(args):
 
     elif args.type=="eval" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
         print("MAIN", "Evaluation: Loading from checkpoint {}".format(args.saved_checkpoint))
-        _network = torch.jit.torch.load(args.saved_checkpoint)
+        state_dict = torch.load(args.saved_checkpoint)
+        _network.load_state_dict(state_dict, strict=False)
         
     _network.to(args.device)
     print("MAIN", f"Training parameters {args}")
