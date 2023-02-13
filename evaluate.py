@@ -81,9 +81,10 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
 
     run_exp_name = args.saved_checkpoint.split('/')[-3]
     run_ckpt_name = args.saved_checkpoint.split('/')[-2].split('-')[1]
-    inference_setting = f"scale{int(args.sc*10):02d}_rot{str(int(args.rot)):s}"
-    resolved_submit_cmd = "zip " + args.output_dir + "/" + run_exp_name + "-ckpt" + run_ckpt_name + "-" + inference_setting + "-pred.zip " +  "pred.json"
+    # Used for multiscale inference
+    inference_setting = f"scale{int(args.sc*10):02d}_rot{str(args.rot):s}"
     
+    resolved_submit_cmd = "zip " + args.output_dir + "/" + run_exp_name + "-ckpt" + run_ckpt_name + "-" + inference_setting + "-pred.zip " +  "pred.json"
     print("RUN_INFERENCE", f"---------Executing: {resolved_submit_cmd}---------")
     os.system(resolved_submit_cmd)
     
