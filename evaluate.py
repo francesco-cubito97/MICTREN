@@ -66,7 +66,7 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
                                              pred_camera.detach(),
                                              pred_2d_joints_from_mesh.detach())
 
-                visual_imgs = torch.einsum(visual_imgs, "abc -> bca")
+                visual_imgs = torch.einsum("abc -> bca", visual_imgs)
                 visual_imgs = np.asarray(visual_imgs)
                 
                 inference_setting = f"scale{int(args.sc*10):02d}_rot{str(int(args.rot)):s}"
