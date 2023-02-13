@@ -117,11 +117,6 @@ def main(args):
     # The final layer will output the 3D joints + 3D mesh vertices
     output_feat_dim = input_feat_dim[1:] + [3]
     
-
-
-    
-
-    
     # Init a series of transformers blocks
     for i in range(len(output_feat_dim)):
         config_class, model_class = BertConfig, TransBlock
@@ -149,30 +144,30 @@ def main(args):
         print("MAIN", "Init model from scratch.")
         trans_layers.append(model)
         
-        # Adding backbone
-        print("MAIN", "Using pre-trained model 'MobileNetV3'")
-        
-        backbone = Backbone()
-        
-        # Compose the final neural network
-        trans_layers = torch.nn.Sequential(*trans_layers)
-        total_params = sum(p.numel() for p in trans_layers.parameters())
-        print("MAIN", f"Transformers total parameters: {total_params}")
-        backbone_total_params = sum(p.numel() for p in backbone.parameters())
-        print("MAIN", f"Backbone total parameters: {backbone_total_params}")
+    # Adding backbone
+    print("MAIN", "Using pre-trained model 'MobileNetV3'")
+    
+    backbone = Backbone()
+    
+    # Compose the final neural network
+    trans_layers = torch.nn.Sequential(*trans_layers)
+    total_params = sum(p.numel() for p in trans_layers.parameters())
+    print("MAIN", f"Transformers total parameters: {total_params}")
+    backbone_total_params = sum(p.numel() for p in backbone.parameters())
+    print("MAIN", f"Backbone total parameters: {backbone_total_params}")
 
-        _network = MICTREN(args, config, backbone, trans_layers)
-        
-        if args.type=="train" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
-            # for fine-tuning or resume training or inference, load weights from checkpoint
-            print("MAIN", f"Loading state dict from checkpoint {args.saved_checkpoint}")
-            checkpoint = torch.load(args.saved_checkpoint, map_location=torch.device("cpu"))
-            _network.load_state_dict(checkpoint, strict=False)
-            del checkpoint
+    _network = MICTREN(args, config, backbone, trans_layers)
+    
+    if args.type=="train" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
+        # for fine-tuning or resume training or inference, load weights from checkpoint
+        print("MAIN", f"Loading state dict from checkpoint {args.saved_checkpoint}")
+        checkpoint = torch.load(args.saved_checkpoint, map_location=torch.device("cpu"))
+        _network.load_state_dict(checkpoint, strict=False)
+        del checkpoint
 
-        elif args.type=="eval" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
-            print("MAIN", "Evaluation: Loading from checkpoint {}".format(args.saved_checkpoint))
-            _network = torch.load(args.saved_checkpoint)
+    elif args.type=="eval" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
+        print("MAIN", "Evaluation: Loading from checkpoint {}".format(args.saved_checkpoint))
+        _network = torch.load(args.saved_checkpoint)
         
     _network.to(args.device)
     print("MAIN", f"Training parameters {args}")
