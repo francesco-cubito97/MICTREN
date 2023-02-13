@@ -180,7 +180,7 @@ def main(args):
                                                is_train=False, 
                                                scale_factor=args.img_scale_factor)
        
-        run_eval_and_save(args, "freihand", val_dataloader, 
+        run_eval_and_save(args, val_dataloader, 
                           _network, mano_model, renderer, mesh_sampler)
 
     else:
