@@ -116,10 +116,14 @@ def main(args):
     
     # The final layer will output the 3D joints + 3D mesh vertices
     output_feat_dim = input_feat_dim[1:] + [3]
+
+    _network = None
     
     if args.type=="eval" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
         print("MAIN", "Evaluation: Loading from checkpoint {}".format(args.saved_checkpoint))
-        _network = torch.load(args.saved_checkpoint)
+        checkpoint = torch.load(args.saved_checkpoint, map_location=torch.device("cpu"))
+        _network.load_state_dict(checkpoint, strict=False)
+        del checkpoint
 
     else:
         # Init a series of transformers blocks
