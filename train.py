@@ -169,6 +169,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
             print("Pred vertices shape:", pred_vertices.shape)
             print("Pred pose shape:", pred_pose.shape)
             print("Pred betas shape:", pred_betas.shape)
+            save_checkpoint(Mictren_model, args, epoch, iteration, optimizer, scaler)
 
         if iteration % args.logging_steps == 0 or iteration == max_iter:
             eta_seconds = batch_time.avg * (max_iter - iteration)

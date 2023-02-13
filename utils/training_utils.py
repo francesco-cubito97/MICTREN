@@ -26,11 +26,7 @@ def save_checkpoint(model, args, epoch, iteration, optimizer, scaler, num_trial=
     model_to_save = model.module if hasattr(model, 'module') else model
     for i in range(num_trial):
         try:
-            torch.save(model_to_save, path.join(checkpoint_dir, 'model.bin'))
-            torch.save(model_to_save.state_dict(), path.join(checkpoint_dir, 'state_dict.bin'))
-            torch.save(args, path.join(checkpoint_dir, 'training_args.bin'))
-            torch.save(optimizer.state_dict(), path.join(checkpoint_dir, 'opt_state_dict.bin'))
-            torch.save(scaler.state_dict(), path.join(checkpoint_dir, 'scaler_state_dict.bin'))
+            torch.save(model_to_save.state_dict(), path.join(checkpoint_dir, 'model_state_dict.pth'))
             print("SAVE_CHECKPOINT", "Save checkpoint to {}".format(checkpoint_dir))
             break
         except:
