@@ -176,7 +176,7 @@ def main(args):
     if args.type=="test":
         val_dataloader = make_hand_data_loader(args, 
                                                args.val_yaml, 
-                                               s_train=False, 
+                                               is_train=False, 
                                                scale_factor=args.img_scale_factor)
        
         run_eval_and_save(args, "freihand", val_dataloader, 
