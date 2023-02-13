@@ -117,39 +117,37 @@ def main(args):
     # The final layer will output the 3D joints + 3D mesh vertices
     output_feat_dim = input_feat_dim[1:] + [3]
     
-    _network = None
 
-    if args.type=="eval" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
-        print("MAIN", "Evaluation: Loading from checkpoint {}".format(args.saved_checkpoint))
-        _network = torch.load(args.saved_checkpoint)
 
-    else:
-        # Init a series of transformers blocks
-        for i in range(len(output_feat_dim)):
-            config_class, model_class = BertConfig, TransBlock
-            config = config_class.from_pretrained(args.model_config)
+    
 
-            config.output_attentions = False
-            config.hidden_dropout_prob = args.drop_out
-            config.img_feature_dim = input_feat_dim[i] 
-            config.output_feature_dim = output_feat_dim[i]
-            args.hidden_size = hidden_feat_dim[i]
-            args.intermediate_size = int(args.hidden_size*4)
+    
+    # Init a series of transformers blocks
+    for i in range(len(output_feat_dim)):
+        config_class, model_class = BertConfig, TransBlock
+        config = config_class.from_pretrained(args.model_config)
 
-            # Update model structure if specified in arguments
-            update_params = ["num_hidden_layers", "hidden_size", "num_attention_heads", "intermediate_size"]
-            for param in update_params:
-                arg_param = getattr(args, param)
-                config_param = getattr(config, param)
-                if arg_param > 0 and arg_param != config_param:
-                    print("MAIN", f"Update config parameter {param}: {config_param} -> {arg_param}")
-                    setattr(config, param, arg_param)
+        config.output_attentions = False
+        config.hidden_dropout_prob = args.drop_out
+        config.img_feature_dim = input_feat_dim[i] 
+        config.output_feature_dim = output_feat_dim[i]
+        args.hidden_size = hidden_feat_dim[i]
+        args.intermediate_size = int(args.hidden_size*4)
 
-            # init a transformer encoder and append it to a list
-            assert config.hidden_size % config.num_attention_heads == 0
-            model = model_class(config=config) 
-            print("MAIN", "Init model from scratch.")
-            trans_layers.append(model)
+        # Update model structure if specified in arguments
+        update_params = ["num_hidden_layers", "hidden_size", "num_attention_heads", "intermediate_size"]
+        for param in update_params:
+            arg_param = getattr(args, param)
+            config_param = getattr(config, param)
+            if arg_param > 0 and arg_param != config_param:
+                print("MAIN", f"Update config parameter {param}: {config_param} -> {arg_param}")
+                setattr(config, param, arg_param)
+
+        # init a transformer encoder and append it to a list
+        assert config.hidden_size % config.num_attention_heads == 0
+        model = model_class(config=config) 
+        print("MAIN", "Init model from scratch.")
+        trans_layers.append(model)
         
         # Adding backbone
         print("MAIN", "Using pre-trained model 'MobileNetV3'")
@@ -165,12 +163,16 @@ def main(args):
 
         _network = MICTREN(args, config, backbone, trans_layers)
         
-        if args.saved_checkpoint!=None and args.saved_checkpoint!="None":
+        if args.type=="train" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
             # for fine-tuning or resume training or inference, load weights from checkpoint
             print("MAIN", f"Loading state dict from checkpoint {args.saved_checkpoint}")
             checkpoint = torch.load(args.saved_checkpoint, map_location=torch.device("cpu"))
             _network.load_state_dict(checkpoint, strict=False)
             del checkpoint
+
+        elif args.type=="eval" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
+            print("MAIN", "Evaluation: Loading from checkpoint {}".format(args.saved_checkpoint))
+            _network = torch.load(args.saved_checkpoint)
         
     _network.to(args.device)
     print("MAIN", f"Training parameters {args}")
