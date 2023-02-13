@@ -173,7 +173,7 @@ def main(args):
     _network.to(args.device)
     print("MAIN", f"Training parameters {args}")
 
-    if args.type=="test":
+    if args.type=="eval":
         val_dataloader = make_hand_data_loader(args, 
                                                args.val_yaml, 
                                                is_train=False, 
