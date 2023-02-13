@@ -176,7 +176,7 @@ def main(args):
 
     if args.type=="eval":
         val_dataloader = make_hand_data_loader(args, 
-                                               args.val_yaml, 
+                                               args.eval_file, 
                                                is_train=False, 
                                                scale_factor=args.img_scale_factor)
        
