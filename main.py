@@ -121,8 +121,8 @@ def main(args):
     
     if args.type=="eval" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
         print("MAIN", "Evaluation: Loading from checkpoint {}".format(args.saved_checkpoint))
-        checkpoint = torch.load(args.saved_checkpoint, map_location=torch.device("cpu"))
-        _network.load_state_dict(checkpoint, strict=False)
+        checkpoint = torch.load(args.saved_checkpoint)
+        _network.load_state_dict(checkpoint)
         del checkpoint
 
     else:
