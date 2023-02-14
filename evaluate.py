@@ -16,13 +16,10 @@ import os
 import os.path as path
 import torch
 
-
-
 from configurations import mano_config as cfg
 from utils.geometric_utils import orthographic_projection
 from utils.render import visualize_mesh
 from utils.training_utils import save_checkpoint
-
 
 def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sampler, renderer):
     Mictren_model.eval()
