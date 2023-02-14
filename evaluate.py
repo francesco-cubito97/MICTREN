@@ -73,6 +73,7 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
                 #inference_setting = f"scale{int(args.sc*10):02d}_rot{str(args.rot):s}"
                 inference_setting = "noscale_norot"
                 ckpt_name = args.saved_checkpoint.split('/')[1]
+                
                 fname = path.join(args.output_dir, f"visual-{ckpt_name[11:]}freihand_results-{inference_setting}-batch{idx}.jpg")
                 # Invert color channels
                 cv2.imwrite(fname, np.asarray(visual_imgs[:, :, ::-1]*255))
