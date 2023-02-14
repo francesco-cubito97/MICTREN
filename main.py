@@ -90,8 +90,8 @@ def parseArguments():
     parser.add_argument("--hidden_feat_dim", default="512,128,32", type=str, 
                         help="Hidden image freature dimensions")
 
-    parser.add_argument("--args.sc", default=1, type=int, required=False)
-    parser.add_argument("--args.rot", default=1, type=int, required=False)   
+    #parser.add_argument("--args.sc", default=1.0, type=float, required=False)
+    #parser.add_argument("--args.rot", default=0.0, type=float, required=False)   
 
     return parser.parse_args()
 

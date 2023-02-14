@@ -69,9 +69,13 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
                 visual_imgs = torch.einsum("abc -> bca", visual_imgs)
                 visual_imgs = np.asarray(visual_imgs)
                 
-                inference_setting = f"scale{int(args.sc*10):02d}_rot{str(int(args.rot)):s}"
-                temp_fname = path.join(args.output_dir, args.saved_checkpoint[0:-9] + "freihand_results_"+inference_setting+"_batch"+str(idx)+".jpg")
-                cv2.imwrite(temp_fname, np.asarray(visual_imgs[:, :, ::-1]*255))
+                # Used for multiscale inference
+                #inference_setting = f"scale{int(args.sc*10):02d}_rot{str(args.rot):s}"
+                inference_setting = "noscale_norot"
+
+                fname = path.join(args.output_dir, f"visual_{args.saved_checkpoint[11:]}freihand_results_{inference_setting}_batch{idx}.jpg")
+                # Invert color channels
+                cv2.imwrite(fname, np.asarray(visual_imgs[:, :, ::-1]*255))
 
     # Saving predictions into a zip file
     print("RUN_INFERENCE", "---------Saving results to 'pred.json'---------")
@@ -82,9 +86,10 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
     run_exp_name = args.saved_checkpoint.split('/')[-3]
     run_ckpt_name = args.saved_checkpoint.split('/')[-2].split('-')[1]
     # Used for multiscale inference
-    inference_setting = f"scale{int(args.sc*10):02d}_rot{str(args.rot):s}"
+    #inference_setting = f"scale{int(args.sc*10):02d}_rot{str(args.rot):s}"
+    inference_setting = "noscale_norot"
     
-    resolved_submit_cmd = "zip " + args.output_dir + "/" + run_exp_name + "-ckpt" + run_ckpt_name + "-" + inference_setting + "-pred.zip " +  "pred.json"
+    resolved_submit_cmd = f"zip {args.output_dir}/{run_exp_name}-ckptrun_ckpt_name-{inference_setting}-pred.zip pred.json"
     print("RUN_INFERENCE", f"---------Executing: {resolved_submit_cmd}---------")
     os.system(resolved_submit_cmd)
     
