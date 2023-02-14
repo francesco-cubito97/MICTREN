@@ -37,7 +37,7 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
             # Make a forward-pass to inference
             pred_camera, pred_3d_joints, pred_vertices_sub, pred_vertices, pred_pose, pred_betas = Mictren_model(images, mano_model, mesh_sampler)
 
-            # Take 3d joints from full mesh
+            # Take 3d joints from full mesh and normalize
             pred_3d_palm = pred_3d_joints[:, cfg.ROOT_INDEX, :]
             pred_3d_joints_from_mesh = pred_3d_joints - pred_3d_palm[:, None, :]
             pred_vertices = pred_vertices - pred_3d_palm[:, None, :]
