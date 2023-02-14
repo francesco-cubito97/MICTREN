@@ -91,7 +91,7 @@ def run_inference_hand_mesh(args, val_loader, Mictren_model, mano_model, mesh_sa
     os.system(resolved_submit_cmd)
     
     resolved_submit_cmd = "rm pred.json"
-    print("RUN_INFERENCE", f"Executing: {resolved_submit_cmd}")
+    print("RUN_INFERENCE", f"---------Executing: {resolved_submit_cmd}---------")
     os.system(resolved_submit_cmd)
     
     return
