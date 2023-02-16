@@ -85,10 +85,10 @@ def parseArguments():
     parser.add_argument("--intermediate_size", default=-1, type=int, required=False, 
                         help="Update model config if given.")
     
-    parser.add_argument("--input_feat_dim", default="1491,256,64", type=str, 
-                        help="Input image feature dimensions")          
-    parser.add_argument("--hidden_feat_dim", default="512,128,32", type=str, 
-                        help="Hidden image freature dimensions")
+    parser.add_argument("--input_feat_dim", default="1027,512,272|512,256,128|694,256,128,64", type=str, 
+                        help="Transformers blocks definitions of input,hidden, output layers")          
+    #parser.add_argument("--hidden_feat_dim", default="512|", type=str, 
+    #                    help="Hidden image freature dimensions")
 
     #parser.add_argument("--args.sc", default=1.0, type=float, required=False)
     #parser.add_argument("--args.rot", default=0.0, type=float, required=False)   
