@@ -65,8 +65,8 @@ class MICTREN(nn.Module):
         template_3d_joints = template_3d_joints/1000.0
 
         # Apply a double downsampling
-        template_vertices_sub_depth_2 = mesh_sampler.downsample(template_vertices, n=2)
-        #template_vertices_sub_depth_1 = mesh_sampler.downsample(template_vertices, n=1)
+        template_vertices_sub_depth_2 = mesh_sampler.downsample(template_vertices, n2=2)
+        #template_vertices_sub_depth_1 = mesh_sampler.downsample(template_vertices, n2=1)
         
         # Normalize results
         template_root = template_3d_joints[:, cfg.ROOT_INDEX, :]

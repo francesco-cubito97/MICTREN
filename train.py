@@ -88,7 +88,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         gt_vertices = gt_vertices/1000.0
         gt_3d_joints = gt_3d_joints/1000.0
 
-        gt_vertices_sub = mesh_sampler.downsample(gt_vertices)
+        gt_vertices_sub = mesh_sampler.downsample(gt_vertices, n2=1)
 
         # Normalize ground truth based on hand's root 
         gt_3d_root = gt_3d_joints[:, cfg.ROOT_INDEX, :]
