@@ -46,7 +46,7 @@ class MICTREN(nn.Module):
         
         # Get output features to recover parameters
         self.parameters_fc1 = nn.Linear(3, 1)
-        self.parameters = nn.Sequential(
+        self.parameters_fc2 = nn.Sequential(
             nn.Linear(cfg.JOIN_NUM + cfg.VERT_SUB_NUM_1, 100), # 216 -> 100
             nn.Linear(100, self.n_params)                      # 100 -> 61  
         )
