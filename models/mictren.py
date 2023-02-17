@@ -52,7 +52,7 @@ class MICTREN(nn.Module):
         )
         
 
-    def forward(self, images, mano_model, mesh_sampler, meta_masks=None, is_train=False):
+    def forward(self, images, mano_model, mesh_sampler, meta_masks=None, is_train=False, iter=None):
         batch_size = images.size(0)
         
         # Generate a template for pose and betas. This will pass through the
@@ -89,24 +89,19 @@ class MICTREN(nn.Module):
         image_feat_block1 = image_feat_out.view(batch_size, 1, image_feat_out.shape[1]).expand(-1, ref_params.shape[1], -1) # shape [bs, 70, 1024]
         features_block1 = torch.cat([ref_params, image_feat_block1], dim=2) # shape [bs, 70, 1027]
 
-        print("MICTREN", f"Feature block 1 shape: {features_block1.shape}")
-        
-        if is_train==True:
-            # Apply mask vertex/joint modeling
-            # meta_masks is a tensor containing all masks, randomly generated in dataloader
-            # constant_tensor is a [MASK] token, which is a floating-value vector with 0.01s
-            constant_tensor = torch.ones_like(features).cuda()*0.01
-            features = features_block1*meta_masks + constant_tensor*(1 - meta_masks)     
+        if(iter != None and iter == 1):
+            print("MICTREN", f"Feature block 1 shape: {features_block1.shape}")   
 
         # Forward-pass first block
-        features_block2 = self.trans_blocks1(features) # shape [bs, 70, 256]
+        features_block2 = self.trans_blocks1(features_block1) # shape [bs, 70, 256]
         # Upsampling 70 -> 216
         features_block2 = self.upsampling_block1(features_block2) # shape [bs, 216, 256]
         # Concatenate the rest of the image features to the input of the second block
         image_feat_block2 = image_feat_intermediate.view(batch_size, 1, image_feat_intermediate.shape[1]).expand(-1, features_block2.shape[1], -1) # shape [bs, 216, 256] 
         features_block2 = torch.cat([features_block2, image_feat_block2], dim=2) # shape [bs, 216, 1072]
         
-        print("MICTREN", f"Feature block 2 shape: {features_block2.shape}")
+        if(iter != None and iter == 1):
+            print("MICTREN", f"Feature block 2 shape: {features_block2.shape}")
 
         if is_train==True:
             # Apply mask vertex/joint modeling
@@ -128,16 +123,18 @@ class MICTREN(nn.Module):
         pred_params = self.parameters_fc1(predictions) # shape [bs, 216, 1]
         pred_params = self.parameters_fc2(pred_params.transpose(1, 2)) # shape [bs, 1, 61]
         pred_params = pred_params.transpose(1, 2).squeeze(-1) # shape [bs, 61]
-
-        print("MICTREN", f"Pred_params = {pred_params.shape}")
+        
+        if(iter != None and iter == 1):
+            print("MICTREN", f"Pred_params = {pred_params.shape}")
         
         pred_cam_params = pred_params[:, :self.n_cam_params]
         pred_pose_params = pred_params[:, self.n_cam_params:self.n_cam_params + self.n_pose_params]
         pred_shape_params = pred_params[:, self.n_cam_params + self.n_pose_params:]
         
-        print(f"Pred_cam_params = {pred_cam_params.shape}" )
-        print(f"Pred_pose_params = {pred_pose_params.shape}" )
-        print(f"Pred_shape_params = {pred_shape_params.shape}")
+        if(iter != None and iter == 1):    
+            print(f"Pred_cam_params = {pred_cam_params.shape}" )
+            print(f"Pred_pose_params = {pred_pose_params.shape}" )
+            print(f"Pred_shape_params = {pred_shape_params.shape}")
         
         # Upsampling
         # [bs, 195, 3] -> [bs, 389, 3] -> [bs, 778, 3]

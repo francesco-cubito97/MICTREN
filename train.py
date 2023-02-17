@@ -105,7 +105,7 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         
         # Forward-pass
         pred_camera, pred_3d_joints, pred_vertices_sub, pred_vertices, pred_pose, pred_betas = Mictren_model(images, mano_model, mesh_sampler, 
-                                                                                                               meta_masks=meta_masks, is_train=True)
+                                                                                                               meta_masks=meta_masks, is_train=True, iter=iteration)
         
         # Regress 3d joints from the mesh
         pred_3d_joints_from_mesh = mano_model.get_3d_joints_from_mesh(pred_vertices)
