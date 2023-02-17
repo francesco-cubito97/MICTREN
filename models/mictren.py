@@ -93,7 +93,7 @@ class MICTREN(nn.Module):
             print("MICTREN", f"Feature block 1 shape: {features_block1.shape}")   
 
         # Forward-pass first block
-        features_block2 = self.trans_blocks1(features_block1) # shape [bs, 70, 256]
+        features_block2 = self.trans_block1(features_block1) # shape [bs, 70, 256]
         # Upsampling 70 -> 216
         features_block2 = self.upsampling_block1(features_block2) # shape [bs, 216, 256]
         # Concatenate the rest of the image features to the input of the second block
