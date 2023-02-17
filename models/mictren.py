@@ -31,6 +31,8 @@ class MICTREN(nn.Module):
         # Upsampling: 70 -> 216
         self.upsampling_block1 = nn.Linear(cfg.VERT_SUB_NUM_2 + cfg.JOIN_NUM, cfg.VERT_SUB_NUM_1 + cfg.JOIN_NUM)
 
+            
+
         # Final Upsampling: 195 -> 389 -> 778
         self.final_upsampling = nn.Sequential(
             nn.Linear(cfg.VERT_SUB_NUM_1, cfg.VERT_NUM//2),
@@ -95,10 +97,10 @@ class MICTREN(nn.Module):
         # Forward-pass first block
         features_block2 = self.trans_block1(features_block1) # shape [bs, 70, 256]
         # Upsampling 70 -> 216
-        features_block2 = self.upsampling_block1(features_block2) # shape [bs, 216, 256]
+        features_block2 = self.upsampling_block1(features_block2.transpose(1, 2)) # shape [bs, 216, 256]
         # Concatenate the rest of the image features to the input of the second block
         image_feat_block2 = image_feat_intermediate.view(batch_size, 1, image_feat_intermediate.shape[1]).expand(-1, features_block2.shape[1], -1) # shape [bs, 216, 256] 
-        features_block2 = torch.cat([features_block2, image_feat_block2], dim=2) # shape [bs, 216, 1072]
+        features_block2 = torch.cat([features_block2.transpose(1, 2), image_feat_block2], dim=2) # shape [bs, 216, 1072]
         
         if(iter != None and iter == 1):
             print("MICTREN", f"Feature block 2 shape: {features_block2.shape}")
