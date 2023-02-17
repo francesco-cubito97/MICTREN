@@ -80,7 +80,7 @@ class MICTREN(nn.Module):
         # Concatenate templates and then duplicate to batch size
         # Reference parameters represents the output that I want transformers from transformers
         ref_params = torch.cat([template_3d_joints, template_vertices_sub_depth_2], dim=1) # shape [1, 21+49, 3]
-        ref_params = ref_params.expand(batch_size, -1, -1) # shape [bs, 216, 3]
+        ref_params = ref_params.expand(batch_size, -1, -1) # shape [bs, 70, 3]
 
         # Extract local image features using a CNN backbone
         image_feat_intermediate, image_feat_out = self.backbone(images) # size list[[1, 240],[1, 576],[1, 1024]]
