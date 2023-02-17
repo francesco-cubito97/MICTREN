@@ -24,10 +24,12 @@ class MICTREN(nn.Module):
         self.backbone = backbone
         self.trans_encoder = trans_encoder
         
-        self.upsampling = nn.Sequential(
-            nn.Linear(cfg.VERT_SUB_NUM, cfg.VERT_NUM//2),
+        self.final_upsampling = nn.Sequential(
+            nn.Linear(cfg.VERT_SUB_NUM_1, cfg.VERT_NUM//2),
             nn.Linear(cfg.VERT_NUM//2, cfg.VERT_NUM)        
         )
+
+        self.upsampling_block1 = nn.Linear(cfg.VERT_SUB_NUM_2 + cfg.JOIN_NUM, cfg.VERT_SUB_NUM_1 + cfg.JOIN_NUM)
 
         # Predict camera parameters, pose and
         # shape parameters from predicted vertices
@@ -36,10 +38,11 @@ class MICTREN(nn.Module):
         self.n_shape_params = 10
         self.n_params = self.n_cam_params + self.n_pose_params + self.n_shape_params
         
-        self.parameters_fc1 = nn.Linear(3, 1)
-        self.parameters_fc2 = nn.Linear(cfg.JOIN_NUM + cfg.VERT_SUB_NUM, 150)
-        self.parameters_fc3 = nn.Linear(150, 100)
-        self.parameters_fc4 = nn.Linear(100, self.n_params)
+        # Get output features to recover parameters
+        self.parameters = nn.Sequential(
+            nn.Linear(cfg.JOIN_NUM + cfg.VERT_SUB_NUM_1 + 3, 100), # 219 -> 100
+            nn.Linear(100, self.n_params)                          # 100 -> 61  
+        )
         
 
     def forward(self, images, mano_model, mesh_sampler, meta_masks=None, is_train=False):
@@ -53,41 +56,64 @@ class MICTREN(nn.Module):
         template_vertices, template_3d_joints = mano_model.layer(template_pose, template_betas)
         template_vertices = template_vertices/1000.0
         template_3d_joints = template_3d_joints/1000.0
-        template_vertices_sub = mesh_sampler.downsample(template_vertices)
 
+        # Apply a double downsampling creating two meshes subsampled
+        template_vertices_sub_depth_2 = mesh_sampler.downsample(template_vertices, n=2)
+        template_vertices_sub_depth_1 = mesh_sampler.downsample(template_vertices, n=1)
+        
         # Normalize results
         template_root = template_3d_joints[:, cfg.ROOT_INDEX, :]
         template_3d_joints = template_3d_joints - template_root[:, None, :]
         template_vertices = template_vertices - template_root[:, None, :]
-        template_vertices_sub = template_vertices_sub - template_root[:, None, :]
+        template_vertices_sub_depth_2 = template_vertices_sub_depth_2 - template_root[:, None, :]
+        template_vertices_sub_depth_1 = template_vertices_sub_depth_1 - template_root[:, None, :]
         
         num_joints = template_3d_joints.shape[1]
 
         # Concatenate templates and then duplicate to batch size
         # Reference parameters represents the output that I want transformers from transformers
-        ref_params = torch.cat([template_3d_joints, template_vertices_sub], dim=1) # shape [1, 21+195, 3]
+        ref_params = torch.cat([template_3d_joints, template_vertices_sub_depth_2], dim=1) # shape [1, 21+49, 3]
         ref_params = ref_params.expand(batch_size, -1, -1) # shape [bs, 216, 3]
 
         # Extract local image features using a CNN backbone
-        image_feat = self.backbone(images) # size [bs, 96 + 240 + 576 + 576] = [bs, 1488]
+        image_feat_intermediate, image_feat_out = self.backbone(images) # size list[[1, 240],[1, 576],[1, 1024]]
 
-        # Concatenate image features together with template parameters
-        image_feat = image_feat.view(batch_size, 1, image_feat.shape[1]).expand(-1, ref_params.shape[1], -1) # shape [bs, 216, 1488]
-        features = torch.cat([ref_params, image_feat], dim=2) # shape [bs, 216, 1488+3] 
+        # Concatenate final image features with coarser mesh template
+        image_feat_block1 = image_feat_out.view(batch_size, 1, image_feat_out.shape[1]).expand(-1, ref_params.shape[1], -1) # shape [bs, 70, 1024]
+        features_block1 = torch.cat([ref_params, image_feat_block1], dim=2) # shape [bs, 70, 1027]
+
+        print("MICTREN", f"Feature block 1 shape: {features_block1.shape}")
+        
+        if is_train==True:
+            # Apply mask vertex/joint modeling
+            # meta_masks is a tensor containing all masks, randomly generated in dataloader
+            # constant_tensor is a [MASK] token, which is a floating-value vector with 0.01s
+            constant_tensor = torch.ones_like(features).cuda()*0.01
+            features = features_block1*meta_masks + constant_tensor*(1 - meta_masks)     
+
+        # Forward-pass first block
+        features_block2 = self.trans_encoder[0](features) # shape [bs, 70, 256]
+        # Upsampling 70 -> 216
+        features_block2 = self.upsampling_block1(features_block2) # shape [bs, 216, 256]
+        # Concatenate the rest of the image features to the input of the second block
+        image_feat_block2 = image_feat_intermediate.view(batch_size, 1, image_feat_intermediate.shape[1]).expand(-1, features_block2.shape[1], -1) # shape [bs, 216, 256] 
+        features_block2 = torch.cat([features_block2, image_feat_block2], dim=2) # shape [bs, 216, 1072]
+        
+        print("MICTREN", f"Feature block 2 shape: {features_block2.shape}")
 
         if is_train==True:
             # Apply mask vertex/joint modeling
             # meta_masks is a tensor containing all masks, randomly generated in dataloader
             # constant_tensor is a [MASK] token, which is a floating-value vector with 0.01s
             constant_tensor = torch.ones_like(features).cuda()*0.01
-            features = features*meta_masks + constant_tensor*(1 - meta_masks)     
+            features = features_block2*meta_masks + constant_tensor*(1 - meta_masks)
 
-        # Forward-pass
-        features = self.trans_encoder(features)
+        # Forward-pass first block
+        features_output = self.trans_encoder[1](features) # shape [bs, 216, 3]
 
         # Get predicted vertices
-        pred_3d_joints = features[:, :num_joints, :] 
-        pred_vertices_sub = features[:, num_joints:, :]
+        pred_3d_joints = features_output[:, :num_joints, :] 
+        pred_vertices_sub = features_output[:, num_joints:, :]
 
         predictions = torch.cat([pred_vertices_sub, pred_3d_joints], dim=1) # shape [bs, 216, 3]
         

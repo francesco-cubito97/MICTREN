@@ -25,7 +25,8 @@ open source project Manopth (https://github.com/hassony2/manopth)
 """
 # Vertices number
 VERT_NUM = 778
-VERT_SUB_NUM = 195
+VERT_SUB_NUM_1 = 195
+VERT_SUB_NUM_2 = 49
 
 # Finger tips right hand
 FINGERTIPS_RIGHT = [745, 317, 444, 556, 673]

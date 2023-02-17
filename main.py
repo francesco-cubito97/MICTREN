@@ -85,7 +85,7 @@ def parseArguments():
     parser.add_argument("--intermediate_size", default=-1, type=int, required=False, 
                         help="Update model config if given.")
     
-    parser.add_argument("--input_feat_dim", default="1027,512,272|512,256,128|694,256,128,64", type=str, 
+    parser.add_argument("--blocks_definitions", default="1027,512,272|512,256,128|694,256,128", type=str, 
                         help="Transformers blocks definitions of input,hidden, output layers")          
     #parser.add_argument("--hidden_feat_dim", default="512|", type=str, 
     #                    help="Hidden image freature dimensions")
@@ -111,15 +111,28 @@ def main(args):
     # Renderer for visualization
     renderer = Renderer(faces=mano_model.faces)
 
-    # Transformer layers
-    trans_layers = []
+    # Create a list of all blocks layers
+    layers_per_block = [layers for layers in args.blocks_definitions.split('|')]
+    
+    input_feat_dim = []
+    hidden_feat_dim = []
+    output_feat_dim = []
 
-    input_feat_dim = [int(item) for item in args.input_feat_dim.split(",")]
-    hidden_feat_dim = [int(item) for item in args.hidden_feat_dim.split(",")]
+    for block in layers_per_block:
+        layers = block.split(',')
+        
+        input_feat_dim.append(int(layers[0]))
+        hidden_feat_dim.append(int(layers[1]))
+        output_feat_dim.append(int(layers[2]))
+    #input_feat_dim = [int(item) for item in args.input_feat_dim.split(",")]
+    #hidden_feat_dim = [int(item) for item in args.hidden_feat_dim.split(",")]
     
     # The final layer will output the 3D joints + 3D mesh vertices
-    output_feat_dim = input_feat_dim[1:] + [3]
+    #output_feat_dim = input_feat_dim[1:] + [3]
     
+    # Transformer blocks
+    trans_blocks = []
+
     # Init a series of transformers blocks
     for i in range(len(output_feat_dim)):
         config_class, model_class = BertConfig, TransBlock
@@ -145,7 +158,7 @@ def main(args):
         assert config.hidden_size % config.num_attention_heads == 0
         model = model_class(config=config) 
         print("MAIN", "Init model from scratch.")
-        trans_layers.append(model)
+        trans_blocks.append(model)
         
     # Adding backbone
     print("MAIN", "Using pre-trained model 'MobileNetV3'")
@@ -153,13 +166,13 @@ def main(args):
     backbone = Backbone()
     
     # Compose the final neural network
-    trans_layers = torch.nn.Sequential(*trans_layers)
-    total_params = sum(p.numel() for p in trans_layers.parameters())
-    print("MAIN", f"Transformers total parameters: {total_params}")
+    #trans_blocks = torch.nn.Sequential(*trans_blocks)
+    #total_params = sum(p.numel() for p in trans_blocks.parameters())
+    #print("MAIN", f"Transformers total parameters: {total_params}")
     backbone_total_params = sum(p.numel() for p in backbone.parameters())
     print("MAIN", f"Backbone total parameters: {backbone_total_params}")
 
-    _network = MICTREN(args, config, backbone, trans_layers)
+    _network = MICTREN(args, config, backbone, trans_blocks)
     
     if args.type=="train" and args.saved_checkpoint!=None and args.saved_checkpoint!="None":
         # For fine-tuning or resume training or inference, load weights from checkpoint

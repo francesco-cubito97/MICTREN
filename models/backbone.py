@@ -11,14 +11,14 @@ from collections import OrderedDict
 class Backbone(nn.Module):
     def __init__(self, *args):
         super().__init__(*args)
-        self.output_layers = [4, 6, 10]
+        self.output_layers = [6, 10]
         self.selected_out = OrderedDict()
         
         # Pretrained MobileNetV3 model
         self.pretrained = mobilenet_v3_small(weights = MobileNet_V3_Small_Weights.DEFAULT)
         # Remove the classification module at the end
-        classifier = list(self.pretrained.classifier.children())[:-4]
-        self.pretrained.classifier = nn.Sequential(*classifier) # final ouput size [batch_size, 576]
+        classifier = list(self.pretrained.classifier.children())[:-1]
+        self.pretrained.classifier = nn.Sequential(*classifier) # final ouput size [batch_size, 1024]
 
         self.fhooks = []
 
@@ -35,5 +35,5 @@ class Backbone(nn.Module):
     def forward(self, x):
         out = self.pretrained(x)
         intermediate_outputs = [list(self.selected_out.values())[i].squeeze() for i in range(len(self.output_layers))]
-        out = torch.cat([intermediate_outputs[0], intermediate_outputs[1], intermediate_outputs[2], out], dim=1)
-        return out
+        intermediate_outputs = torch.cat([intermediate_outputs[0], intermediate_outputs[1]], dim=1)
+        return intermediate_outputs, out
