@@ -85,10 +85,8 @@ def parseArguments():
     parser.add_argument("--intermediate_size", default=-1, type=int, required=False, 
                         help="Update model config if given.")
     
-    parser.add_argument("--blocks_definitions", default="1027,512,272|512,256,128|694,256,128", type=str, 
-                        help="Transformers blocks definitions of input,hidden, output layers")          
-    #parser.add_argument("--hidden_feat_dim", default="512|", type=str, 
-    #                    help="Hidden image freature dimensions")
+    parser.add_argument("--blocks_definitions", default="1027,512,256|1072,512,256|256,128,64|64,32,3", type=str, 
+                        help="Transformers blocks definitions of input, hidden, output layers")          
 
     #parser.add_argument("--args.sc", default=1.0, type=float, required=False)
     #parser.add_argument("--args.rot", default=0.0, type=float, required=False)   
@@ -111,7 +109,7 @@ def main(args):
     # Renderer for visualization
     renderer = Renderer(faces=mano_model.faces)
 
-    # Create a list of all blocks layers
+    # Create a list of all layers for each block
     layers_per_block = [layers for layers in args.blocks_definitions.split('|')]
     
     input_feat_dim = []

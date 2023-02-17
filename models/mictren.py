@@ -16,20 +16,26 @@ class MICTREN(nn.Module):
     """
     End-to-end network for hand pose and mesh reconstruction from a single image.
     """
-    def __init__(self, args, config, backbone, trans_encoder):
+    def __init__(self, args, config, backbone, trans_blocks):
         super(MICTREN, self).__init__()
         self.args = args
 
         self.config = config
         self.backbone = backbone
-        self.trans_encoder = trans_encoder
+        self.trans_blocks = trans_blocks
         
+        # Transformers blocks
+        self.trans_block1 = trans_blocks.pop(0)
+        self.trans_block2 = torch.nn.Sequential(*trans_blocks)
+
+        # Upsampling: 70 -> 216
+        self.upsampling_block1 = nn.Linear(cfg.VERT_SUB_NUM_2 + cfg.JOIN_NUM, cfg.VERT_SUB_NUM_1 + cfg.JOIN_NUM)
+
+        # Final Upsampling: 195 -> 389 -> 778
         self.final_upsampling = nn.Sequential(
             nn.Linear(cfg.VERT_SUB_NUM_1, cfg.VERT_NUM//2),
             nn.Linear(cfg.VERT_NUM//2, cfg.VERT_NUM)        
         )
-
-        self.upsampling_block1 = nn.Linear(cfg.VERT_SUB_NUM_2 + cfg.JOIN_NUM, cfg.VERT_SUB_NUM_1 + cfg.JOIN_NUM)
 
         # Predict camera parameters, pose and
         # shape parameters from predicted vertices
@@ -93,7 +99,7 @@ class MICTREN(nn.Module):
             features = features_block1*meta_masks + constant_tensor*(1 - meta_masks)     
 
         # Forward-pass first block
-        features_block2 = self.trans_encoder[0](features) # shape [bs, 70, 256]
+        features_block2 = self.trans_blocks1(features) # shape [bs, 70, 256]
         # Upsampling 70 -> 216
         features_block2 = self.upsampling_block1(features_block2) # shape [bs, 216, 256]
         # Concatenate the rest of the image features to the input of the second block
@@ -109,8 +115,8 @@ class MICTREN(nn.Module):
             constant_tensor = torch.ones_like(features).cuda()*0.01
             features = features_block2*meta_masks + constant_tensor*(1 - meta_masks)
 
-        # Forward-pass first block
-        features_output = self.trans_encoder[1](features) # shape [bs, 216, 3]
+        # Forward-pass remaining blocks
+        features_output = self.trans_block2(features) # shape [bs, 216, 3]
 
         # Get predicted vertices
         pred_3d_joints = features_output[:, :num_joints, :] 
@@ -123,7 +129,7 @@ class MICTREN(nn.Module):
         pred_params = self.parameters_fc2(pred_params.transpose(1, 2)) # shape [bs, 1, 61]
         pred_params = pred_params.transpose(1, 2).squeeze(-1) # shape [bs, 61]
 
-        print("MICTREN", f"Pred_params= {pred_params.shape}")
+        print("MICTREN", f"Pred_params = {pred_params.shape}")
         
         pred_cam_params = pred_params[:, :self.n_cam_params]
         pred_pose_params = pred_params[:, self.n_cam_params:self.n_cam_params + self.n_pose_params]

@@ -79,8 +79,8 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         has_mesh = annotations['has_smpl'].cuda()
         has_3d_joints = has_mesh
 
-        mvm_mask = annotations['mvm_mask'].cuda()
-        mjm_mask = annotations['mjm_mask'].cuda()
+        mvm_mask = annotations['mvm_mask'].cuda() # shape [195, 1]
+        mjm_mask = annotations['mjm_mask'].cuda() # shape [21, 1]
 
         # Generate mesh from pose and betas
         gt_vertices, gt_3d_joints = mano_model.layer(gt_pose, gt_betas)

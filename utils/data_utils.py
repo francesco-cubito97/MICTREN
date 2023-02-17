@@ -20,6 +20,7 @@ import numpy as np
 from utils.tsv_file_utils import TSVFile, CompositeTSVFile
 from utils.tsv_file_utils import load_linelist_file, load_from_yaml_file, find_file_path_in_yaml
 from utils.image_utils import img_from_base64, crop, flip_img, flip_pose, flip_kp, transform, rot_aa
+from configurations import mano_config as cfg
 
 
 class IterationBasedBatchSampler(torch.utils.data.sampler.BatchSampler):
@@ -353,7 +354,7 @@ class HandMeshTSVDataset(object):
         mvm_percent = 0.0 # or 0.05
         ###################################
 
-        mjm_mask = np.ones((21,1))
+        mjm_mask = np.ones((cfg.JOIN_NUM,1))
         if self.is_train:
             num_joints = 21
             pb = np.random.random_sample()
@@ -362,7 +363,7 @@ class HandMeshTSVDataset(object):
             mjm_mask[indices,:] = 0.0
         mjm_mask = torch.from_numpy(mjm_mask).float()
 
-        mvm_mask = np.ones((195,1))
+        mvm_mask = np.ones((cfg.VERT_SUB_NUM_1,1))
         if self.is_train:
             num_vertices = 195
             pb = np.random.random_sample()
