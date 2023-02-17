@@ -106,13 +106,13 @@ class MICTREN(nn.Module):
         features_block2 = torch.cat([features_block2, image_feat_block2], dim=2) # shape [bs, 216, 1072]
         
         if(iter != None and iter == 1):
-            print("MICTREN", f"Feature block 2 shape: {features_block2.shape}")
+            print("MICTREN", f"Feature block 2 after skip connection shape: {features_block2.shape}")
 
         if is_train==True:
             # Apply mask vertex/joint modeling
             # meta_masks is a tensor containing all masks, randomly generated in dataloader
             # constant_tensor is a [MASK] token, which is a floating-value vector with 0.01s
-            constant_tensor = torch.ones_like(features).cuda()*0.01
+            constant_tensor = torch.ones_like(features_block2).cuda()*0.01
             features = features_block2*meta_masks + constant_tensor*(1 - meta_masks)
 
         # Forward-pass remaining blocks
