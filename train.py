@@ -99,8 +99,9 @@ def train(args, train_dataloader, Mictren_model, mano_model, renderer, mesh_samp
         gt_3d_joints_with_tag[:, :, :3] = gt_3d_joints
 
         # Prepare masks for 3d joints/vertices modeling
-        mjm_mask_ = mjm_mask.expand(-1, -1, int(args.input_feat_dim.split(",")[0]))
-        mvm_mask_ = mvm_mask.expand(-1, -1, int(args.input_feat_dim.split(",")[0]))
+        input_features = args.blocks_definitions.split('|')[1].split(',')[0]
+        mjm_mask_ = mjm_mask.expand(-1, -1, int(input_features))
+        mvm_mask_ = mvm_mask.expand(-1, -1, int(input_features))
         meta_masks = torch.cat([mjm_mask_, mvm_mask_], dim=1)
         
         # Forward-pass
