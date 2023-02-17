@@ -39,9 +39,10 @@ class MICTREN(nn.Module):
         self.n_params = self.n_cam_params + self.n_pose_params + self.n_shape_params
         
         # Get output features to recover parameters
+        self.parameters_fc1 = nn.Linear(3, 1)
         self.parameters = nn.Sequential(
-            nn.Linear(cfg.JOIN_NUM + cfg.VERT_SUB_NUM_1 + 3, 100), # 219 -> 100
-            nn.Linear(100, self.n_params)                          # 100 -> 61  
+            nn.Linear(cfg.JOIN_NUM + cfg.VERT_SUB_NUM_1, 100), # 216 -> 100
+            nn.Linear(100, self.n_params)                      # 100 -> 61  
         )
         
 
@@ -57,16 +58,16 @@ class MICTREN(nn.Module):
         template_vertices = template_vertices/1000.0
         template_3d_joints = template_3d_joints/1000.0
 
-        # Apply a double downsampling creating two meshes subsampled
+        # Apply a double downsampling
         template_vertices_sub_depth_2 = mesh_sampler.downsample(template_vertices, n=2)
-        template_vertices_sub_depth_1 = mesh_sampler.downsample(template_vertices, n=1)
+        #template_vertices_sub_depth_1 = mesh_sampler.downsample(template_vertices, n=1)
         
         # Normalize results
         template_root = template_3d_joints[:, cfg.ROOT_INDEX, :]
         template_3d_joints = template_3d_joints - template_root[:, None, :]
         template_vertices = template_vertices - template_root[:, None, :]
         template_vertices_sub_depth_2 = template_vertices_sub_depth_2 - template_root[:, None, :]
-        template_vertices_sub_depth_1 = template_vertices_sub_depth_1 - template_root[:, None, :]
+        #template_vertices_sub_depth_1 = template_vertices_sub_depth_1 - template_root[:, None, :]
         
         num_joints = template_3d_joints.shape[1]
 
@@ -118,25 +119,23 @@ class MICTREN(nn.Module):
         predictions = torch.cat([pred_vertices_sub, pred_3d_joints], dim=1) # shape [bs, 216, 3]
         
         # Learn camera/pose/shape parameters from predicted vertices and joints
-        pred_params = self.parameters_fc1(predictions)
-        pred_params = self.parameters_fc2(pred_params.transpose(1, 2))
-        pred_params = self.parameters_fc3(pred_params)
-        pred_params = self.parameters_fc4(pred_params)
-        pred_params = pred_params.transpose(1, 2).squeeze(-1)
+        pred_params = self.parameters_fc1(predictions) # shape [bs, 216, 1]
+        pred_params = self.parameters_fc2(pred_params.transpose(1, 2)) # shape [bs, 1, 61]
+        pred_params = pred_params.transpose(1, 2).squeeze(-1) # shape [bs, 61]
 
-        #print("Pred_params= ", pred_params.shape)
+        print("MICTREN", f"Pred_params= {pred_params.shape}")
         
         pred_cam_params = pred_params[:, :self.n_cam_params]
         pred_pose_params = pred_params[:, self.n_cam_params:self.n_cam_params + self.n_pose_params]
         pred_shape_params = pred_params[:, self.n_cam_params + self.n_pose_params:]
         
-        #print("Pred_cam_params = ", pred_cam_params.shape)
-        #print("Pred_pose_params = ", pred_pose_params.shape)
-        #print("Pred_shape_params = ", pred_shape_params.shape)
+        print(f"Pred_cam_params = {pred_cam_params.shape}" )
+        print(f"Pred_pose_params = {pred_pose_params.shape}" )
+        print(f"Pred_shape_params = {pred_shape_params.shape}")
         
         # Upsampling
         # [bs, 195, 3] -> [bs, 389, 3] -> [bs, 778, 3]
-        pred_vertices = self.upsampling(pred_vertices_sub.transpose(1, 2))
+        pred_vertices = self.final_upsampling(pred_vertices_sub.transpose(1, 2))
         pred_vertices = pred_vertices.transpose(1, 2)
 
         return (pred_cam_params, pred_3d_joints, pred_vertices_sub, 
