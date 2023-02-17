@@ -41,7 +41,7 @@ def save_checkpoint(model, args, epoch, iteration, optimizer=None, scaler=None, 
 def adjust_learning_rate(optimizer, epoch, args):
     """
     Sets the learning rate to the initial LR decayed by x every y epochs
-    x = 0.1, y = args.num_train_epochs/2.0 = 100
+    x = 0.1, y = args.num_train_epochs/2.0 = 150
     """
     lr = args.learning_rate * (0.1 ** (epoch // (args.num_train_epochs/2.0)  ))
     for param_group in optimizer.param_groups:

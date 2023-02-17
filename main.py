@@ -63,7 +63,7 @@ def parseArguments():
                         help="Batch size per GPU/CPU for training/evaluation.")
     parser.add_argument("--learning_rate", default=1e-4, type=float, 
                         help="The initial learning rate.")
-    parser.add_argument("--num_train_epochs", default=200, type=int, 
+    parser.add_argument("--num_train_epochs", default=300, type=int, 
                         help="Total number of training epochs")
     parser.add_argument("--vertices_loss_weight", default=1.0, type=float)          
     parser.add_argument("--joints_loss_weight", default=1.0, type=float)
@@ -72,7 +72,7 @@ def parseArguments():
     parser.add_argument("--vloss_w_sub", default=0.5, type=float)
     parser.add_argument("--vloss_w_full", default=0.5, type=float)
     parser.add_argument("--drop_out", default=0.1, type=float, 
-                        help="Drop out ratio in BERT.")
+                        help="Drop out ratio in Transformers.")
 
     #---------------------------MODEL PARAMS---------------------------#
     parser.add_argument("--num_hidden_layers", default=4, type=int, required=False, 
