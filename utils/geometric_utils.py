@@ -9,9 +9,11 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import torch
+import numpy as np
 
 def rodrigues(theta):
-    """Convert axis-angle representation to rotation matrix.
+    """
+    Convert axis-angle representation to rotation matrix.
     Args:
         theta: size = [B, 3]
     Returns:
@@ -27,7 +29,8 @@ def rodrigues(theta):
     return quat2mat(quat)
 
 def quat2mat(quat):
-    """Convert quaternion coefficients to rotation matrix.
+    """
+    Convert quaternion coefficients to rotation matrix.
     Args:
         quat: size = [B, 4] 4 <===>(w, x, y, z)
     Returns:
@@ -49,7 +52,8 @@ def quat2mat(quat):
     return rotMat    
     
 def orthographic_projection(X, camera):
-    """Perform orthographic projection of 3D points X using the camera parameters
+    """
+    Perform orthographic projection of 3D points X using the camera parameters
     Args:
         X: size = [B, N, 3]
         camera: size = [B, 3]
@@ -61,3 +65,33 @@ def orthographic_projection(X, camera):
     shape = X_trans.shape
     X_2d = (camera[:, :, 0] * X_trans.view(shape[0], -1)).view(shape)
     return X_2d
+
+def rigid_transform_3D(A, B):
+    """
+    Calculate Center, Rotation and Translation values to apply a rigid transformation
+    from A to B
+    """
+    n, dim = A.shape
+    centroid_A = np.mean(A, axis = 0)
+    centroid_B = np.mean(B, axis = 0)
+    H = np.dot(np.transpose(A - centroid_A), B - centroid_B) / n
+    U, s, V = np.linalg.svd(H)
+    R = np.dot(np.transpose(V), np.transpose(U))
+    if np.linalg.det(R) < 0:
+        s[-1] = -s[-1]
+        V[2] = -V[2]
+        R = np.dot(np.transpose(V), np.transpose(U))
+
+    varP = np.var(A, axis=0).sum()
+    c = 1/varP * np.sum(s) 
+
+    t = -np.dot(c*R, np.transpose(centroid_A)) + np.transpose(centroid_B)
+    return c, R, t
+
+def rigid_align(A, B):
+    """
+    Apply a rigid transformation to align A and B bodies
+    """
+    c, R, t = rigid_transform_3D(A, B)
+    A2 = np.transpose(np.dot(c*R, np.transpose(A))) + t
+    return A2
