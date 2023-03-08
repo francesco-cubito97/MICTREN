@@ -25,6 +25,15 @@ def img_from_base64(imagestring):
     except ValueError:
         return None
 
+def img_to_base64(filename):
+    try:
+        my_str = ""
+        with open(filename, "rb") as img_file:
+            my_str = base64.b64encode(img_file.read())
+        return my_str
+    except ValueError:
+        return None
+
 def myimrotate(img, angle, center=None, scale=1.0, border_value=0, auto_bound=False):
     if center is not None and auto_bound:
         raise ValueError('`auto_bound` conflicts with `center`')

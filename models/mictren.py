@@ -113,10 +113,10 @@ class MICTREN(nn.Module):
             # meta_masks is a tensor containing all masks, randomly generated in dataloader
             # constant_tensor is a [MASK] token, which is a floating-value vector with 0.01s
             constant_tensor = torch.ones_like(features_block2).cuda()*0.01
-            features = features_block2*meta_masks + constant_tensor*(1 - meta_masks)
+            features_block2 = features_block2*meta_masks + constant_tensor*(1 - meta_masks)
 
         # Forward-pass remaining blocks
-        features_output = self.trans_block2(features) # shape [bs, 216, 3]
+        features_output = self.trans_block2(features_block2) # shape [bs, 216, 3]
 
         # Get predicted vertices
         pred_3d_joints = features_output[:, :num_joints, :] 
